@@ -1,0 +1,17 @@
+{
+  "name": "tilelicious",
+  "version": "0.0.1",
+  "description": "render tiles to static images",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "babel-node": "babel-node --stage 0 --ignore='foo|bar|baz'"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "canvas": "^1.3.1",
+    "geo-viewport": "^0.1.1",
+    "superagent": "^1.4.0"
+  }
+}
