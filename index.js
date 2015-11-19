@@ -4,8 +4,13 @@ import request from 'superagent';
 import geoViewport from 'geo-viewport';
 //import latLngToTileXY from './tileUtils';
 import SM from 'sphericalmercator';
+import mapnik from 'mapnik';
+import toGeoJSON from 'togeojson';
+import mapnikify from 'geojson-mapnikify';
 
 let sm = new SM({size: 256});
+
+//mapnik.Map.aspect_fix_mode = 'ADJUST_CANVAS_WIDTH';
 
 let dims = {
     w: 3508,
@@ -27,9 +32,39 @@ let focus = {
     center: [-122.2708, 37.8044],
     zoom: z
 };
+
+let debug = true;
+let basemapOpacity = 1;
+
+// First, get the bounds of the viewport, using:
+//   * the pixel dimensions of the mask
+//   * the geographic center
+//   * the zoom level
 let bbox = geoViewport.bounds(focus.center, z, [dims.w, dims.h]);
-let debug = false;
-let basemapOpacity = 0.2;
+
+// Next, find the tile extent that covers bbox
+let xyzBounds = sm.xyz(bbox, z);
+
+// Find the geographic bbox of the above tiles
+let tileBbox = sm.bbox(xyzBounds.minX, xyzBounds.minY, z);
+
+// Get pixel position for each bounding box
+let bboxPx = sm.px([bbox[0], bbox[3]], z);
+let tilePx = sm.px([tileBbox[0], tileBbox[3]], z);
+
+// Get the vector from the corner of the tile bbox to the corner of the view bbox
+let offset = [
+    bboxPx[0] - tilePx[0],
+    bboxPx[1] - tilePx[1]
+];
+
+console.log('bbox', bbox);
+console.log('xyzBounds', xyzBounds);
+console.log('tileBbox', tileBbox);
+console.log('pixels', bboxPx, tilePx);
+console.log('offset', offset);
+
+//return false;
 
 // W-S-E-N
 //let bbox = [
@@ -78,6 +113,7 @@ let render = () => {
 
 let fetchMapboxImages = () => {
     console.log('bbox', bbox);
+
     // How many images should we fetch from mapbox?
     let numCols = Math.ceil(dims.w / MAX_SIZE.w);
     let numRows = Math.ceil(dims.h / MAX_SIZE.h);
@@ -142,6 +178,7 @@ let fetchMapboxImages = () => {
 
 let tileThings = () => {
     let tileBounds = sm.xyz(bbox, z);
+    console.log(tileBounds);
     let count = (tileBounds.maxX - tileBounds.minX + 1) * (tileBounds.maxY - tileBounds.minY + 1);
     let ic = 0;
     let promises = [];
@@ -158,6 +195,7 @@ let tileThings = () => {
     Promise.all(promises)
         .then(() => {
             render();
+            vectorThings();
         });
 };
 
@@ -194,14 +232,17 @@ class ImageFetcher {
                     console.log(`tile [${renderCount}/${this.count}] ... drawing ${this.relX}, ${this.relY} @ ${pX}, ${pY}`);
                     let img = new Image;
                     img.src = res.body;
-                    ctx.drawImage(img, pX, pY);
+                    // this shifts thing to the proper location
+                    //ctx.drawImage(img, pX - 200, pY - 80);
+
+                    ctx.drawImage(img, pX - offset[0], pY - offset[1]);
 
                     if (debug) {
                         ctx.rect(pX, pY, size, size);
                         ctx.strokeStyle = 'rgba(0,0,0,0.5)';
                         ctx.stroke();
                     }
-                    resolve()
+                    resolve();
                     //ctx.drawImage(img, 0, 0, 100, 100);
                 //    //img = new Image;
                 //    img.src = canvas.toBuffer();
@@ -213,8 +254,60 @@ class ImageFetcher {
 
 }
 
+let vectorThings = () => {
+    mapnik.register_default_fonts();
+    mapnik.register_default_input_plugins();
+    let map = new mapnik.Map(dims.w, dims.h);
 
+    //map.aspect_fix_mode = 'SHRINK_CANVAS';
+    // styles
+    //map.loadSync('data/stylesheet.xml');
+
+    let geojson = require('./data/1.json');
+    console.log(geojson)
+    let xml = mapnikify(geojson, false, (err, xml) => {
+        //console.log(xml);
+        map.fromString(xml, {}, (err, map) => {
+            //console.log('good')
+            //let bounds = mercator.bbox(0,0,0, false, "900913");
+            //console.log(map)
+            //map.zoomAll();
+            //console.log(map)
+            // convert to mercator and zoom here
+            let bounds = sm.convert(bbox, '900913');
+            map.zoomToBox(bounds);
+            // render the image
+            let im = new mapnik.Image(dims.w, dims.h);
+            //map.renderFileSync('./mapnik.png');
+            map.render(im, (err, im) => {
+                im.encode('png', (err, buffer) => {
+                    console.info(buffer)
+                    let img = new Image;
+                    img.src = buffer;
+                    ctx.drawImage(img, 0, 0);
+                    ctx.globalAlpha = 1;
+                    render()
+                })
+            })
+        });
+    });
+
+    //let l = new mapnik.Layer('rides');
+    //l.datasource = new mapnik.Datasource({type:'geojson',file:'data/1.json'});
+    //map.add_layer(l);
+
+
+
+};
+
+
+
+//ctx.globalAlpha = basemapOpacity;
+//bg('#202020');
+//tileThings();
+////vectorThings();
 
 ctx.globalAlpha = basemapOpacity;
-bg('#202020');
+bg('white');
 tileThings();
+//vectorThings();

@@ -23,11 +23,25 @@ var _sphericalmercator = require('sphericalmercator');
 
 var _sphericalmercator2 = _interopRequireDefault(_sphericalmercator);
 
+var _mapnik = require('mapnik');
+
+var _mapnik2 = _interopRequireDefault(_mapnik);
+
+var _togeojson = require('togeojson');
+
+var _togeojson2 = _interopRequireDefault(_togeojson);
+
+var _geojsonMapnikify = require('geojson-mapnikify');
+
+var _geojsonMapnikify2 = _interopRequireDefault(_geojsonMapnikify);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var sm = new _sphericalmercator2.default({ size: 256 });
+
+//mapnik.Map.aspect_fix_mode = 'ADJUST_CANVAS_WIDTH';
 
 var dims = {
     w: 3508,
@@ -49,9 +63,36 @@ var focus = {
     center: [-122.2708, 37.8044],
     zoom: z
 };
+
+var debug = true;
+var basemapOpacity = 1;
+
+// First, get the bounds of the viewport, using:
+//   * the pixel dimensions of the mask
+//   * the geographic center
+//   * the zoom level
 var bbox = _geoViewport2.default.bounds(focus.center, z, [dims.w, dims.h]);
-var debug = false;
-var basemapOpacity = 0.2;
+
+// Next, find the tile extent that covers bbox
+var xyzBounds = sm.xyz(bbox, z);
+
+// Find the geographic bbox of the above tiles
+var tileBbox = sm.bbox(xyzBounds.minX, xyzBounds.minY, z);
+
+// Get pixel position for each bounding box
+var bboxPx = sm.px([bbox[0], bbox[3]], z);
+var tilePx = sm.px([tileBbox[0], tileBbox[3]], z);
+
+// Get the vector from the corner of the tile bbox to the corner of the view bbox
+var offset = [bboxPx[0] - tilePx[0], bboxPx[1] - tilePx[1]];
+
+console.log('bbox', bbox);
+console.log('xyzBounds', xyzBounds);
+console.log('tileBbox', tileBbox);
+console.log('pixels', bboxPx, tilePx);
+console.log('offset', offset);
+
+//return false;
 
 // W-S-E-N
 //let bbox = [
@@ -100,6 +141,7 @@ var render = function render() {
 
 var fetchMapboxImages = function fetchMapboxImages() {
     console.log('bbox', bbox);
+
     // How many images should we fetch from mapbox?
     var numCols = Math.ceil(dims.w / MAX_SIZE.w);
     var numRows = Math.ceil(dims.h / MAX_SIZE.h);
@@ -118,8 +160,8 @@ var fetchMapboxImages = function fetchMapboxImages() {
             var edges = [bbox[0] + intervals.lon * x, //minlon
             bbox[1] + intervals.lat * y, bbox[0] + intervals.lon * (x + 1), bbox[1] + intervals.lat * (y + 1)];
             var _z = 14;
-            var xyzBounds = sm.xyz(edges, _z);
-            console.log(xyzBounds);
+            var _xyzBounds = sm.xyz(edges, _z);
+            console.log(_xyzBounds);
             // Pixel bounds
             var pixels = [Math.round(intervals.pixelsX * x), Math.round(intervals.pixelsY * y), Math.round(intervals.pixelsX * (x + 1)), Math.round(intervals.pixelsY * (y + 1))];
             //let center = [
@@ -146,7 +188,7 @@ var fetchMapboxImages = function fetchMapboxImages() {
             //    MAX_SIZE.h * y
             //];
             //
-            var mapboxTile = new ImageFetcher(xyzBounds.minX, xyzBounds.minY, _z);
+            var mapboxTile = new ImageFetcher(_xyzBounds.minX, _xyzBounds.minY, _z);
             break;
         }
         break;
@@ -155,6 +197,7 @@ var fetchMapboxImages = function fetchMapboxImages() {
 
 var tileThings = function tileThings() {
     var tileBounds = sm.xyz(bbox, z);
+    console.log(tileBounds);
     var count = (tileBounds.maxX - tileBounds.minX + 1) * (tileBounds.maxY - tileBounds.minY + 1);
     var ic = 0;
     var promises = [];
@@ -170,6 +213,7 @@ var tileThings = function tileThings() {
     }
     Promise.all(promises).then(function () {
         render();
+        vectorThings();
     });
 };
 
@@ -209,7 +253,10 @@ var ImageFetcher = (function () {
                     console.log('tile [' + renderCount + '/' + _this.count + '] ... drawing ' + _this.relX + ', ' + _this.relY + ' @ ' + pX + ', ' + pY);
                     var img = new _canvas.Image();
                     img.src = res.body;
-                    ctx.drawImage(img, pX, pY);
+                    // this shifts thing to the proper location
+                    //ctx.drawImage(img, pX - 200, pY - 80);
+
+                    ctx.drawImage(img, pX - offset[0], pY - offset[1]);
 
                     if (debug) {
                         ctx.rect(pX, pY, size, size);
@@ -230,6 +277,55 @@ var ImageFetcher = (function () {
     return ImageFetcher;
 })();
 
+var vectorThings = function vectorThings() {
+    _mapnik2.default.register_default_fonts();
+    _mapnik2.default.register_default_input_plugins();
+    var map = new _mapnik2.default.Map(dims.w, dims.h);
+
+    //map.aspect_fix_mode = 'SHRINK_CANVAS';
+    // styles
+    //map.loadSync('data/stylesheet.xml');
+
+    var geojson = require('./data/1.json');
+    console.log(geojson);
+    var xml = (0, _geojsonMapnikify2.default)(geojson, false, function (err, xml) {
+        //console.log(xml);
+        map.fromString(xml, {}, function (err, map) {
+            //console.log('good')
+            //let bounds = mercator.bbox(0,0,0, false, "900913");
+            //console.log(map)
+            //map.zoomAll();
+            //console.log(map)
+            // convert to mercator and zoom here
+            var bounds = sm.convert(bbox, '900913');
+            map.zoomToBox(bounds);
+            // render the image
+            var im = new _mapnik2.default.Image(dims.w, dims.h);
+            //map.renderFileSync('./mapnik.png');
+            map.render(im, function (err, im) {
+                im.encode('png', function (err, buffer) {
+                    console.info(buffer);
+                    var img = new _canvas.Image();
+                    img.src = buffer;
+                    ctx.drawImage(img, 0, 0);
+                    ctx.globalAlpha = 1;
+                    render();
+                });
+            });
+        });
+    });
+
+    //let l = new mapnik.Layer('rides');
+    //l.datasource = new mapnik.Datasource({type:'geojson',file:'data/1.json'});
+    //map.add_layer(l);
+};
+
+//ctx.globalAlpha = basemapOpacity;
+//bg('#202020');
+//tileThings();
+////vectorThings();
+
 ctx.globalAlpha = basemapOpacity;
-bg('#202020');
+bg('white');
 tileThings();
+//vectorThings();
