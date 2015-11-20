@@ -35,6 +35,10 @@ var _geojsonMapnikify = require('geojson-mapnikify');
 
 var _geojsonMapnikify2 = _interopRequireDefault(_geojsonMapnikify);
 
+var _lodash = require('lodash');
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -64,8 +68,8 @@ var focus = {
     zoom: z
 };
 
-var debug = true;
-var basemapOpacity = 1;
+var debug = false;
+var basemapOpacity = 0.1;
 
 // First, get the bounds of the viewport, using:
 //   * the pixel dimensions of the mask
@@ -281,13 +285,31 @@ var vectorThings = function vectorThings() {
     _mapnik2.default.register_default_fonts();
     _mapnik2.default.register_default_input_plugins();
     var map = new _mapnik2.default.Map(dims.w, dims.h);
+    ctx.globalAlpha = 1;
 
     //map.aspect_fix_mode = 'SHRINK_CANVAS';
     // styles
     //map.loadSync('data/stylesheet.xml');
+    //map.loadSync('data/stylesheet.xml');
 
     var geojson = require('./data/1.json');
-    console.log(geojson);
+    //let style = {
+    //    stroke: 'red',
+    //    fill: 'red',
+    //    'stroke-width': 0.3
+    //};
+    //geojson.stroke = 'red';
+    // https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0
+    _lodash2.default.assign(geojson.features[0].properties, {
+        stroke: '#FFFFFF',
+        'stroke-width': 1,
+        'stroke-opacity': 0.5
+    });
+    //console.info(geojson.features[0])
+    //geojson.features[0].properties = style;
+    //geojson.properties.stroke = 'blue';
+    //console.info(geojson.features[0])
+    //console.log(geojson)
     var xml = (0, _geojsonMapnikify2.default)(geojson, false, function (err, xml) {
         //console.log(xml);
         map.fromString(xml, {}, function (err, map) {
@@ -308,7 +330,6 @@ var vectorThings = function vectorThings() {
                     var img = new _canvas.Image();
                     img.src = buffer;
                     ctx.drawImage(img, 0, 0);
-                    ctx.globalAlpha = 1;
                     render();
                 });
             });

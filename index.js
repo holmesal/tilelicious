@@ -7,6 +7,7 @@ import SM from 'sphericalmercator';
 import mapnik from 'mapnik';
 import toGeoJSON from 'togeojson';
 import mapnikify from 'geojson-mapnikify';
+import _ from 'lodash';
 
 let sm = new SM({size: 256});
 
@@ -33,8 +34,8 @@ let focus = {
     zoom: z
 };
 
-let debug = true;
-let basemapOpacity = 1;
+let debug = false;
+let basemapOpacity = 0.1;
 
 // First, get the bounds of the viewport, using:
 //   * the pixel dimensions of the mask
@@ -258,13 +259,31 @@ let vectorThings = () => {
     mapnik.register_default_fonts();
     mapnik.register_default_input_plugins();
     let map = new mapnik.Map(dims.w, dims.h);
+    ctx.globalAlpha = 1;
 
     //map.aspect_fix_mode = 'SHRINK_CANVAS';
     // styles
     //map.loadSync('data/stylesheet.xml');
+    //map.loadSync('data/stylesheet.xml');
 
     let geojson = require('./data/1.json');
-    console.log(geojson)
+    //let style = {
+    //    stroke: 'red',
+    //    fill: 'red',
+    //    'stroke-width': 0.3
+    //};
+    //geojson.stroke = 'red';
+    // https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0
+    _.assign(geojson.features[0].properties, {
+        stroke: '#FFFFFF',
+        'stroke-width': 1,
+        'stroke-opacity': 0.5
+    });
+    //console.info(geojson.features[0])
+    //geojson.features[0].properties = style;
+    //geojson.properties.stroke = 'blue';
+    //console.info(geojson.features[0])
+    //console.log(geojson)
     let xml = mapnikify(geojson, false, (err, xml) => {
         //console.log(xml);
         map.fromString(xml, {}, (err, map) => {
@@ -285,7 +304,6 @@ let vectorThings = () => {
                     let img = new Image;
                     img.src = buffer;
                     ctx.drawImage(img, 0, 0);
-                    ctx.globalAlpha = 1;
                     render()
                 })
             })
