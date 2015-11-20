@@ -8,76 +8,206 @@ import mapnik from 'mapnik';
 import toGeoJSON from 'togeojson';
 import mapnikify from 'geojson-mapnikify';
 import _ from 'lodash';
+import {getDims} from './sizes';
 
 let sm = new SM({size: 256});
 
-//mapnik.Map.aspect_fix_mode = 'ADJUST_CANVAS_WIDTH';
+// Knobs to turn
+let debug = true;                     // turns on tile box renderings
+let basemapOpacity = 1;
 
-let dims = {
-    w: 3508,
-    h: 2480
-};
 
+
+// Constants
+// should this change per image size?
 let BORDER = 50;
-
-let z = 15;
-
+const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1Ijoic2lyYWxvbnNvIiwiYSI6IkEwdTNZcG8ifQ.Nunkow8Nopb-zUFDlvqciQ';
 // Maximum static map size, from mapbox
-let MAX_SIZE = {
-    w: 256,
-    h: 256
-};
+let TILE_SIZE = 256;
 
-//// Example
-let focus = {
-    center: [-122.2708, 37.8044],
-    zoom: z
-};
 
-let debug = false;
-let basemapOpacity = 0.1;
+// TODO - make these inputs
+let size = 'a4';
+let z = 15;
+let center = [-122.2708, 37.8044]; // lon, lat
 
-// First, get the bounds of the viewport, using:
-//   * the pixel dimensions of the mask
-//   * the geographic center
-//   * the zoom level
-let bbox = geoViewport.bounds(focus.center, z, [dims.w, dims.h]);
 
-// Next, find the tile extent that covers bbox
-let xyzBounds = sm.xyz(bbox, z);
+class StravaMap {
 
-// Find the geographic bbox of the above tiles
-let tileBbox = sm.bbox(xyzBounds.minX, xyzBounds.minY, z);
+    constructor(center, z, size, mapid) {
+        this.center = center;
+        this.z = z;
+        this.size = size;
+        this.mapid = mapid;
 
-// Get pixel position for each bounding box
-let bboxPx = sm.px([bbox[0], bbox[3]], z);
-let tilePx = sm.px([tileBbox[0], tileBbox[3]], z);
+        // Get the dims for this paper size
+        this.dims = getDims(size);
+        
+        // Init the canvas
+        this.initCanvas();
 
-// Get the vector from the corner of the tile bbox to the corner of the view bbox
-let offset = [
-    bboxPx[0] - tilePx[0],
-    bboxPx[1] - tilePx[1]
-];
+        // Initialize geo extents
+        this.initGeo(center, z, this.dims);
 
-console.log('bbox', bbox);
-console.log('xyzBounds', xyzBounds);
-console.log('tileBbox', tileBbox);
-console.log('pixels', bboxPx, tilePx);
-console.log('offset', offset);
 
-//return false;
+        // Fetch ze images!
+        this.fetchMapboxImages().then(() => {
+            console.info('done fetching images!');
+            this.renderToFile();
+        })
+        .catch((err) => {console.error(err)});
 
-// W-S-E-N
-//let bbox = [
-//    -122.347269,
-//    37.77621,
-//    -122.217321,
-//    37.837513
-//];
+    }
 
-let canvas = new Canvas(dims.w, dims.h);
+    initGeo(center, z, dims) {
+        // First, get the bounds of the viewport, using:
+        //   * the pixel dimensions of the mask
+        //   * the geographic center
+        //   * the zoom level
+        // W-S-E-N
+        let bbox = geoViewport.bounds(center, z, [this.dims.w, this.dims.h]);
 
-let ctx = canvas.getContext('2d');
+        // Next, find the tile extent that covers bbox
+        this.xyzBounds = sm.xyz(bbox, z);
+
+        // Find the geographic bbox of the above tiles
+        let tileBbox = sm.bbox(this.xyzBounds.minX, this.xyzBounds.minY, z);
+
+        // Get pixel position for each bounding box
+        let bboxPx = sm.px([bbox[0], bbox[3]], z);
+        let tilePx = sm.px([tileBbox[0], tileBbox[3]], z);
+
+        // Get the vector from the corner of the tile bbox to the corner of the view bbox
+        this.offset = [
+            bboxPx[0] - tilePx[0],
+            bboxPx[1] - tilePx[1]
+        ];
+
+        if (debug) {
+            console.log('.....bbox.....\n', bbox);
+            console.log('.....xyzBounds.....\n', this.xyzBounds);
+            console.log('.....tileBbox.....\n', tileBbox);
+            console.log('.....pixels.....\n', bboxPx, tilePx);
+            console.log('.....offset.....\n', this.offset);
+        }
+    }
+
+    initCanvas() {
+        this.canvas = new Canvas(this.dims.w, this.dims.h);
+        this.ctx = this.canvas.getContext('2d');
+    }
+
+    drawBackground(color) {
+        this.ctx.rect(0, 0, this.dims.w, this.dims.h);
+        this.ctx.fillStyle = color;
+        this.ctx.fill();
+    }
+
+    renderToFile() {
+        // Render out to a png
+        let out = fs.createWriteStream(__dirname + '/test.png');
+        let stream = this.canvas.pngStream();
+
+        stream.on('data', function(chunk){
+            out.write(chunk);
+        });
+
+        stream.on('end', function(){
+            console.log('saved png');
+        });
+    }
+
+    fetchMapboxImages() {
+        return new Promise((resolve, reject) => {
+            // Render count starts off at 0
+            this.renderCount = 0;
+
+            // Calculate the tile x and y ranges for the current bounding box
+            let tileBounds = this.xyzBounds;
+            // Count the tiles
+            let count = (tileBounds.maxX - tileBounds.minX + 1) * (tileBounds.maxY - tileBounds.minY + 1);
+            let ic = 0;
+            let promises = [];
+            console.info('fetching ' + count);
+            for (let x=tileBounds.minX; x <= tileBounds.maxX;x++){
+                for (let y=tileBounds.minY; y <= tileBounds.maxY;y++){
+                    let relX = x - tileBounds.minX;
+                    let relY = y - tileBounds.minY;
+                    //if (debug) console.info(`fetching ${x}, ${y}`);
+
+                    //let tile = new ImageFetcher(x, y, z, relX, relY, ic, count);
+                    let tilePromise = this.fetchImage(x, y, z);
+                    promises.push(tilePromise);
+                    tilePromise.then((tileBuffer) => {
+                        // Target pixels
+                        let pX = relX * TILE_SIZE;
+                        let pY = relY * TILE_SIZE;
+
+                        // Log
+                        renderCount++;
+                        console.log(`tile [${renderCount}/${count}] ... drawing ${relX}, ${relY} @ ${pX} [+ ${this.offset[0]}], ${pY} [+${this.offset[1]}]`);
+
+                        // Adjust by corner offset and render
+                        this.renderTile(tileBuffer, pX - this.offset[0], pY - this.offset[1]);
+
+                        // Doneskis
+                        resolve();
+                    }).catch((err) => {console.error(err); throw new Error(err)});
+                }
+            }
+            Promise.all(promises)
+                .then(() => {
+                    resolve();
+                }).catch((err) => {reject(err)})
+        });
+
+    }
+
+    fetchImage(x, y, z) {
+        return new Promise((resolve, reject) => {
+            // Build the URL
+            let url = `https://api.mapbox.com/v4/${this.mapid}/${z}/${x}/${y}.png?access_token=${MAPBOX_ACCESS_TOKEN}`;
+            //if (debug) console.info(url);
+
+            // Make the request
+            request.get(url)
+                .end((err, res) => {
+                    if (err) {
+                        console.error(err);
+                        reject(err);
+                    } else {
+                        resolve(res.body)
+                    }
+
+                });
+        })
+    }
+
+    renderTile(tileBuffer, x, y) {
+        console.info(x, y);
+        // Create a new image
+        let img = new Image;
+        img.src = tileBuffer;
+        // Fade the basemap, if needed
+        this.ctx.globalAlpha = basemapOpacity;
+        // Draw
+        this.ctx.drawImage(img, x, y);
+        // Reset opacity
+        this.ctx.globalAlpha = 1;
+        // If debugging, stroke tile
+        if (debug) {
+            this.ctx.rect(x, y, TILE_SIZE, TILE_SIZE);
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            this.ctx.stroke();
+        }
+    }
+
+
+}
+
+
+
+
 
 //ctx.font = '10px Arial';
 //ctx.rotate(.1);
@@ -90,94 +220,73 @@ let ctx = canvas.getContext('2d');
 //ctx.lineTo(50 + te.width, 102);
 //ctx.stroke();
 
-// Draw the white background
-let bg = (color) => {
-    ctx.rect(0, 0, dims.w, dims.h);
-    ctx.fillStyle = color;
-    ctx.fill();
-};
-
-// Render the mapbox tiles
-let render = () => {
-    // Render out to a png
-    let out = fs.createWriteStream(__dirname + '/test.png');
-    let stream = canvas.pngStream();
-
-    stream.on('data', function(chunk){
-        out.write(chunk);
-    });
-
-    stream.on('end', function(){
-        console.log('saved png');
-    });
-};
-
-let fetchMapboxImages = () => {
-    console.log('bbox', bbox);
-
-    // How many images should we fetch from mapbox?
-    let numCols = Math.ceil(dims.w / MAX_SIZE.w);
-    let numRows = Math.ceil(dims.h / MAX_SIZE.h);
-    // How much lat/lng should each image be responsible for?
-    let intervals = {
-        lon: (bbox[2] - bbox[0]) / numCols,
-        lat: (bbox[3] - bbox[1]) / numRows,
-        pixelsX: dims.w / numCols,
-        pixelsY: dims.h / numRows
-    };
-    // Request one image for each range
-    console.log(`fetching ${numCols} x ${numRows} images`)
-    for (let x = 0; x < numCols; x++) {
-        for (let y = 0; y < numRows; y++) {
-             //W-S-E-N
-            let edges = [
-                bbox[0] + intervals.lon * x, //minlon
-                bbox[1] + intervals.lat * y,
-                bbox[0] + intervals.lon * (x + 1),
-                bbox[1] + intervals.lat * (y + 1)
-            ];
-            let z = 14;
-            let xyzBounds = sm.xyz(edges, z);
-            console.log(xyzBounds);
-            // Pixel bounds
-            let pixels = [
-                Math.round(intervals.pixelsX * x),
-                Math.round(intervals.pixelsY * y),
-                Math.round(intervals.pixelsX * (x + 1)),
-                Math.round(intervals.pixelsY * (y + 1))
-            ];
-            //let center = [
-            //    (edges[2] + edges[0]) / 2,
-            //    (edges[3] + edges[1]) / 2
-            //];
-            //let bounds = geoViewport.bounds(center, 14, [MAX_SIZE.w, MAX_SIZE.h]);
-            //let size = [
-            //    pixels[2] - pixels[0],
-            //    pixels[3] - pixels[1]
-            //];
-            //// Calculate center and zoom
-            //let viewport = geoViewport.viewport(bounds, [MAX_SIZE.w, MAX_SIZE.h]);
-            //console.log(x, y);
-            //console.log('bounds', bounds);
-            //console.log(pixels);
-            //console.log(size);
-            //console.log('viewport', viewport);
-            //console.log('recomputed bounds', geoViewport.bounds(viewport.center, viewport.zoom, [dims.w, dims.h]))
-            //console.log('\n\n --- \n\n');
-            //
-            //let pos = [
-            //    MAX_SIZE.w * x,
-            //    MAX_SIZE.h * y
-            //];
-            //
-            let mapboxTile = new ImageFetcher(xyzBounds.minX, xyzBounds.minY, z);
-            break;
-        }
-        break;
-    }
-};
+//let fetchMapboxImages = () => {
+//    console.log('bbox', bbox);
+//
+//    // How many images should we fetch from mapbox?
+//    let numCols = Math.ceil(dims.w / MAX_SIZE.w);
+//    let numRows = Math.ceil(dims.h / MAX_SIZE.h);
+//    // How much lat/lng should each image be responsible for?
+//    let intervals = {
+//        lon: (bbox[2] - bbox[0]) / numCols,
+//        lat: (bbox[3] - bbox[1]) / numRows,
+//        pixelsX: dims.w / numCols,
+//        pixelsY: dims.h / numRows
+//    };
+//    // Request one image for each range
+//    console.log(`fetching ${numCols} x ${numRows} images`)
+//    for (let x = 0; x < numCols; x++) {
+//        for (let y = 0; y < numRows; y++) {
+//             //W-S-E-N
+//            let edges = [
+//                bbox[0] + intervals.lon * x, //minlon
+//                bbox[1] + intervals.lat * y,
+//                bbox[0] + intervals.lon * (x + 1),
+//                bbox[1] + intervals.lat * (y + 1)
+//            ];
+//            let z = 14;
+//            let xyzBounds = sm.xyz(edges, z);
+//            console.log(xyzBounds);
+//            // Pixel bounds
+//            let pixels = [
+//                Math.round(intervals.pixelsX * x),
+//                Math.round(intervals.pixelsY * y),
+//                Math.round(intervals.pixelsX * (x + 1)),
+//                Math.round(intervals.pixelsY * (y + 1))
+//            ];
+//            //let center = [
+//            //    (edges[2] + edges[0]) / 2,
+//            //    (edges[3] + edges[1]) / 2
+//            //];
+//            //let bounds = geoViewport.bounds(center, 14, [MAX_SIZE.w, MAX_SIZE.h]);
+//            //let size = [
+//            //    pixels[2] - pixels[0],
+//            //    pixels[3] - pixels[1]
+//            //];
+//            //// Calculate center and zoom
+//            //let viewport = geoViewport.viewport(bounds, [MAX_SIZE.w, MAX_SIZE.h]);
+//            //console.log(x, y);
+//            //console.log('bounds', bounds);
+//            //console.log(pixels);
+//            //console.log(size);
+//            //console.log('viewport', viewport);
+//            //console.log('recomputed bounds', geoViewport.bounds(viewport.center, viewport.zoom, [dims.w, dims.h]))
+//            //console.log('\n\n --- \n\n');
+//            //
+//            //let pos = [
+//            //    MAX_SIZE.w * x,
+//            //    MAX_SIZE.h * y
+//            //];
+//            //
+//            let mapboxTile = new ImageFetcher(xyzBounds.minX, xyzBounds.minY, z);
+//            break;
+//        }
+//        break;
+//    }
+//};
 
 let tileThings = () => {
+    ctx.globalAlpha = basemapOpacity;
     let tileBounds = sm.xyz(bbox, z);
     console.log(tileBounds);
     let count = (tileBounds.maxX - tileBounds.minX + 1) * (tileBounds.maxY - tileBounds.minY + 1);
@@ -196,6 +305,7 @@ let tileThings = () => {
     Promise.all(promises)
         .then(() => {
             render();
+            ctx.globalAlpha = 1;
             vectorThings();
         });
 };
@@ -239,8 +349,8 @@ class ImageFetcher {
                     ctx.drawImage(img, pX - offset[0], pY - offset[1]);
 
                     if (debug) {
-                        ctx.rect(pX, pY, size, size);
-                        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                        ctx.rect(pX - offset[0], pY - offset[1], size, size);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
                         ctx.stroke();
                     }
                     resolve();
@@ -325,7 +435,9 @@ let vectorThings = () => {
 //tileThings();
 ////vectorThings();
 
-ctx.globalAlpha = basemapOpacity;
-bg('white');
-tileThings();
+//bg('#202020');
+//tileThings();
 //vectorThings();
+
+
+let map = new StravaMap(center, z, size, 'mapbox.streets');
