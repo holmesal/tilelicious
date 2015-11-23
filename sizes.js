@@ -3,6 +3,10 @@ export const sizes = {
     a4: {
         w: 3508,
         h: 2480
+    },
+    debug: {
+        w: 512,
+        h: 512
     }
 };
 

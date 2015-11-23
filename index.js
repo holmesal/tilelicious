@@ -14,7 +14,7 @@ let sm = new SM({size: 256});
 
 // Knobs to turn
 let debug = true;                     // turns on tile box renderings
-let basemapOpacity = 1;
+let basemapOpacity = 0.1;
 
 
 
@@ -27,8 +27,9 @@ let TILE_SIZE = 256;
 
 
 // TODO - make these inputs
-let size = 'a4';
-let z = 15;
+//let size = 'a4';
+let size = 'debug';
+let z = 12; //15;
 let center = [-122.2708, 37.8044]; // lon, lat
 
 
@@ -53,7 +54,11 @@ class StravaMap {
         // Fetch ze images!
         this.fetchMapboxImages().then(() => {
             console.info('done fetching images!');
-            this.renderToFile();
+            this.renderVectors().then(() => {
+                console.info('done drawing vectors!');
+                console.info('rendering to file!');
+                this.renderToFile();
+            }).catch((err) => {console.error(err)});
         })
         .catch((err) => {console.error(err)});
 
@@ -66,6 +71,7 @@ class StravaMap {
         //   * the zoom level
         // W-S-E-N
         let bbox = geoViewport.bounds(center, z, [this.dims.w, this.dims.h]);
+        this.bbox = bbox;
 
         // Next, find the tile extent that covers bbox
         this.xyzBounds = sm.xyz(bbox, z);
@@ -136,23 +142,27 @@ class StravaMap {
                     //if (debug) console.info(`fetching ${x}, ${y}`);
 
                     //let tile = new ImageFetcher(x, y, z, relX, relY, ic, count);
-                    let tilePromise = this.fetchImage(x, y, z);
+                    // Return a promise for all operations on this tile
+                    let tilePromise = new Promise((resolveTile, reject) => {
+                        // Fetchimage returns a promise that resolves when the image comes back
+                        this.fetchImage(x, y, z).then((tileBuffer) => {
+                            // Target pixels
+                            let pX = relX * TILE_SIZE;
+                            let pY = relY * TILE_SIZE;
+
+                            // Log
+                            this.renderCount++;
+                            console.log(`tile [${this.renderCount}/${count}] ... drawing ${relX}, ${relY} @ ${pX} [+ ${this.offset[0]}], ${pY} [+${this.offset[1]}]`);
+
+                            // Adjust by corner offset and render
+                            this.renderTile(tileBuffer, pX - this.offset[0], pY - this.offset[1]);
+
+                            // Done with all tile operations
+                            resolveTile();
+                        }).catch((err) => {console.error(err); throw new Error(err)});
+
+                    });
                     promises.push(tilePromise);
-                    tilePromise.then((tileBuffer) => {
-                        // Target pixels
-                        let pX = relX * TILE_SIZE;
-                        let pY = relY * TILE_SIZE;
-
-                        // Log
-                        renderCount++;
-                        console.log(`tile [${renderCount}/${count}] ... drawing ${relX}, ${relY} @ ${pX} [+ ${this.offset[0]}], ${pY} [+${this.offset[1]}]`);
-
-                        // Adjust by corner offset and render
-                        this.renderTile(tileBuffer, pX - this.offset[0], pY - this.offset[1]);
-
-                        // Doneskis
-                        resolve();
-                    }).catch((err) => {console.error(err); throw new Error(err)});
                 }
             }
             Promise.all(promises)
@@ -202,6 +212,61 @@ class StravaMap {
         }
     }
 
+    renderVectors() {
+        return new Promise((resolve, reject) => {
+            // Mapnik defaults
+            mapnik.register_default_fonts();
+            mapnik.register_default_input_plugins();
+
+            // Create a new mapnik map
+            let map = new mapnik.Map(this.dims.w, this.dims.h);
+
+            // Load the geojson
+            let geojson = require('./data/1.json');
+
+            // Update the loaded geojson with styles
+            _.assign(geojson.features[0].properties, {
+                stroke: '#FFFFFF',
+                'stroke-width': 1,
+                'stroke-opacity': 0.5
+            });
+
+            // Ensure context opacity is at 1
+            this.ctx.globalAlpha = 1;
+
+            // Convert to mapnik xml format
+            let xml = mapnikify(geojson, false, (err, xml) => {
+                //console.log(xml);
+                map.fromString(xml, {}, (err, map) => {
+                    //map.zoomAll();
+
+                    // Convert to the bbox desired
+                    let bounds = sm.convert(this.bbox, '900913');
+
+                    // Zoom the map to this bbox
+                    map.zoomToBox(bounds);
+
+                    // Create the output image
+                    let im = new mapnik.Image(this.dims.w, this.dims.h);
+
+                    // Render this map to an image buffer
+                    map.render(im, (err, im) => {
+                        if (err) {reject(err); return}
+                        // Encode as a png
+                        im.encode('png', (err, buffer) => {
+                            console.info('vector buffer', buffer);
+                            if (err) {reject(err); return}
+                            let img = new Image;
+                            img.src = buffer;
+                            this.ctx.drawImage(img, 0, 0);
+                            resolve();
+                        })
+                    })
+                });
+            });
+
+        });
+    }
 
 }
 
@@ -310,115 +375,71 @@ let tileThings = () => {
         });
 };
 
-let renderCount = 0;
-
-
-class ImageFetcher {
-
-    constructor(x, y, z, relX, relY, ic, count) {
-        this.count = count;
-        this.relX = relX;
-        this.relY = relY;
-        //console.info('rendering tile at ' + pos)
-        //console.info(viewport)
-        //this.dims = dims;
-        //let pos = [0,0];
-        //let url = `https://api.mapbox.com/v4/mapbox.streets/${viewport.center[0]},${viewport.center[1]},${viewport.zoom}/${size[0]}x${size[1]}.png?access_token=pk.eyJ1Ijoic2lyYWxvbnNvIiwiYSI6IkEwdTNZcG8ifQ.Nunkow8Nopb-zUFDlvqciQ`;
-        this.url = `https://api.mapbox.com/v4/mapbox.streets/${z}/${x}/${y}.png?access_token=pk.eyJ1Ijoic2lyYWxvbnNvIiwiYSI6IkEwdTNZcG8ifQ.Nunkow8Nopb-zUFDlvqciQ`;
-        //console.log(url);
-        //this.fetchImage(url, relX, relY);
-    }
-
-    fetchImage() {
-        return new Promise((resolve, reject) => {
-            request.get(this.url)
-                .end((err, res) => {
-                    if (err) {
-                        console.error(err);
-                    }
-                    let size = 256;
-                    renderCount++;
-                    let pX = this.relX * size;
-                    let pY = this.relY * size;
-                    console.log(`tile [${renderCount}/${this.count}] ... drawing ${this.relX}, ${this.relY} @ ${pX}, ${pY}`);
-                    let img = new Image;
-                    img.src = res.body;
-                    // this shifts thing to the proper location
-                    //ctx.drawImage(img, pX - 200, pY - 80);
-
-                    ctx.drawImage(img, pX - offset[0], pY - offset[1]);
-
-                    if (debug) {
-                        ctx.rect(pX - offset[0], pY - offset[1], size, size);
-                        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-                        ctx.stroke();
-                    }
-                    resolve();
-                    //ctx.drawImage(img, 0, 0, 100, 100);
-                //    //img = new Image;
-                //    img.src = canvas.toBuffer();
-                //    ctx.drawImage(img, 100, 100, 50, 50);
-                //    ctx.drawImage(img, 200, 100, 50, 50);
-                });
-        })
-    }
-
-}
+//let renderCount = 0;
+//
+//
+//class ImageFetcher {
+//
+//    constructor(x, y, z, relX, relY, ic, count) {
+//        this.count = count;
+//        this.relX = relX;
+//        this.relY = relY;
+//        //console.info('rendering tile at ' + pos)
+//        //console.info(viewport)
+//        //this.dims = dims;
+//        //let pos = [0,0];
+//        //let url = `https://api.mapbox.com/v4/mapbox.streets/${viewport.center[0]},${viewport.center[1]},${viewport.zoom}/${size[0]}x${size[1]}.png?access_token=pk.eyJ1Ijoic2lyYWxvbnNvIiwiYSI6IkEwdTNZcG8ifQ.Nunkow8Nopb-zUFDlvqciQ`;
+//        this.url = `https://api.mapbox.com/v4/mapbox.streets/${z}/${x}/${y}.png?access_token=pk.eyJ1Ijoic2lyYWxvbnNvIiwiYSI6IkEwdTNZcG8ifQ.Nunkow8Nopb-zUFDlvqciQ`;
+//        //console.log(url);
+//        //this.fetchImage(url, relX, relY);
+//    }
+//
+//    fetchImage() {
+//        return new Promise((resolve, reject) => {
+//            request.get(this.url)
+//                .end((err, res) => {
+//                    if (err) {
+//                        console.error(err);
+//                    }
+//                    let size = 256;
+//                    renderCount++;
+//                    let pX = this.relX * size;
+//                    let pY = this.relY * size;
+//                    console.log(`tile [${renderCount}/${this.count}] ... drawing ${this.relX}, ${this.relY} @ ${pX}, ${pY}`);
+//                    let img = new Image;
+//                    img.src = res.body;
+//                    // this shifts thing to the proper location
+//                    //ctx.drawImage(img, pX - 200, pY - 80);
+//
+//                    ctx.drawImage(img, pX - offset[0], pY - offset[1]);
+//
+//                    if (debug) {
+//                        ctx.rect(pX - offset[0], pY - offset[1], size, size);
+//                        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+//                        ctx.stroke();
+//                    }
+//                    resolve();
+//                    //ctx.drawImage(img, 0, 0, 100, 100);
+//                //    //img = new Image;
+//                //    img.src = canvas.toBuffer();
+//                //    ctx.drawImage(img, 100, 100, 50, 50);
+//                //    ctx.drawImage(img, 200, 100, 50, 50);
+//                });
+//        })
+//    }
+//
+//}
 
 let vectorThings = () => {
-    mapnik.register_default_fonts();
-    mapnik.register_default_input_plugins();
-    let map = new mapnik.Map(dims.w, dims.h);
-    ctx.globalAlpha = 1;
 
-    //map.aspect_fix_mode = 'SHRINK_CANVAS';
-    // styles
-    //map.loadSync('data/stylesheet.xml');
-    //map.loadSync('data/stylesheet.xml');
-
-    let geojson = require('./data/1.json');
-    //let style = {
-    //    stroke: 'red',
-    //    fill: 'red',
-    //    'stroke-width': 0.3
-    //};
-    //geojson.stroke = 'red';
     // https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0
     _.assign(geojson.features[0].properties, {
         stroke: '#FFFFFF',
         'stroke-width': 1,
         'stroke-opacity': 0.5
     });
-    //console.info(geojson.features[0])
-    //geojson.features[0].properties = style;
-    //geojson.properties.stroke = 'blue';
-    //console.info(geojson.features[0])
-    //console.log(geojson)
-    let xml = mapnikify(geojson, false, (err, xml) => {
-        //console.log(xml);
-        map.fromString(xml, {}, (err, map) => {
-            //console.log('good')
-            //let bounds = mercator.bbox(0,0,0, false, "900913");
-            //console.log(map)
-            //map.zoomAll();
-            //console.log(map)
-            // convert to mercator and zoom here
-            let bounds = sm.convert(bbox, '900913');
-            map.zoomToBox(bounds);
-            // render the image
-            let im = new mapnik.Image(dims.w, dims.h);
-            //map.renderFileSync('./mapnik.png');
-            map.render(im, (err, im) => {
-                im.encode('png', (err, buffer) => {
-                    console.info(buffer)
-                    let img = new Image;
-                    img.src = buffer;
-                    ctx.drawImage(img, 0, 0);
-                    render()
-                })
-            })
-        });
-    });
+
+
 
     //let l = new mapnik.Layer('rides');
     //l.datasource = new mapnik.Datasource({type:'geojson',file:'data/1.json'});
@@ -427,17 +448,6 @@ let vectorThings = () => {
 
 
 };
-
-
-
-//ctx.globalAlpha = basemapOpacity;
-//bg('#202020');
-//tileThings();
-////vectorThings();
-
-//bg('#202020');
-//tileThings();
-//vectorThings();
 
 
 let map = new StravaMap(center, z, size, 'mapbox.streets');
