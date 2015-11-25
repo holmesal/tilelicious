@@ -5,8 +5,8 @@ export const sizes = {
         h: 2480
     },
     debug: {
-        w: 512,
-        h: 512
+        w: 256,
+        h: 256
     }
 };
 
