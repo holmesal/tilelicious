@@ -81,9 +81,11 @@ class ActivityNomNom {
                 'type',
                 'athlete'
             ));
-            new StreamNomNom(this.uuid, activity.id)
+
+            // DANGER - uncomment this line to pull in stream data for all of these activities
+            //new StreamNomNom(this.uuid, activity.id)
         })
     }
 }
 
-let me = new ActivityNomNom('8657205');
+//let me = new ActivityNomNom('8657205');
