@@ -1,6 +1,7 @@
 import strava from 'strava-v3';
 import _ from 'lodash';
 import {userRef, userActivityRef} from './../fb';
+import StreamNomNom from './StreamNomNom';
 
 const PER_PAGE = 200;
 
@@ -80,6 +81,7 @@ class ActivityNomNom {
                 'type',
                 'athlete'
             ));
+            new StreamNomNom(this.uuid, activity.id)
         })
     }
 }
