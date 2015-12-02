@@ -11,6 +11,17 @@ export const sizes = {
     debug: {
         w: 256,
         h: 256
+    },
+    test: {
+        w: 600 * 2,
+        h: 848.4 * 2
+    }
+};
+
+export const screenSizes = {
+    a4: {
+        w: 600,
+        h: 848.4
     }
 };
 
