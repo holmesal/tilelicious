@@ -15,7 +15,13 @@ let sm = new SM({size: 256});
 // Knobs to turn
 let debug = false;                     // turns on tile box renderings
 let basemapOpacity = 1;               // fade the basemap
-let vectorScaleFactor = 4;
+//let vectorScaleFactor = 4;
+let vectorScaleFactor = 8;
+
+let vectorStyle = {
+    opacity: 0.15,
+    stroke: '#000000'
+};
 
 
 
@@ -28,10 +34,11 @@ let TILE_SIZE = 256;
 
 
 // TODO - make these inputs
-let size = 'a4';
+let size = 'a1';
 //let size = 'debug';
-let z = 15;
-let center = [-122.2708, 37.8044]; // lon, lat
+//let z = 15;
+let z = 18;
+let center = [-122.295, 37.838]; // lon, lat
 
 
 class StravaMap {
@@ -160,7 +167,9 @@ class StravaMap {
 
                             // Done with all tile operations
                             resolveTile();
-                        }).catch((err) => {console.error(err); throw new Error(err)});
+                        }).catch((err) => {
+                            console.error('error fetching tile', err); throw new Error(err); reject(err)
+                        });
 
                     });
                     promises.push(tilePromise);
@@ -227,9 +236,9 @@ class StravaMap {
 
             // Update the loaded geojson with styles
             _.assign(geojson.features[0].properties, {
-                stroke: '#000000',
-                'stroke-width': 1 * vectorScaleFactor,
-                'stroke-opacity': 0.15
+                stroke: vectorStyle.stroke,
+                'stroke-width': vectorScaleFactor,
+                'stroke-opacity': vectorStyle.opacity
             });
 
             // Ensure context opacity is at 1

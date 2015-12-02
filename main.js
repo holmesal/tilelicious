@@ -1,4 +1,7 @@
 require("babel-core/register");
-//require('./index');
-require('./nom_nom/ActivityNomNom');
-require('./nom_nom/StreamNomNom');
+require('./index');
+
+// Queues and noms
+//require('./nom_nom/ActivityNomNom');
+//require('./nom_nom/StreamNomNom');
+//require('./queues/tokenExchange');

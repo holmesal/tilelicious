@@ -11,7 +11,7 @@ export default class StreamNomNom {
         this.activityId = activityId;
         let that = this;
         // Only fetch this stream if it doesn't exist in firebase
-        activityStreamRef(activityId).once('value', (snap) => {
+        activityStreamRef(activityId).child('type').once('value', (snap) => {
             if (snap.val()) {
                 console.info('not fetching stream, it is already loaded')
             } else {
