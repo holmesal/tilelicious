@@ -1,7 +1,11 @@
 require("babel-core/register");
-require('./index');
 
 // Queues and noms
-//require('./nom_nom/ActivityNomNom');
-//require('./nom_nom/StreamNomNom');
-//require('./queues/tokenExchange');
+require('./queues/ImageGenerationQueue');
+require('./nom_nom/ActivityNomNom');
+require('./nom_nom/StreamNomNom');
+require('./queues/tokenExchange');
+
+
+// Uncomment to import from './gpx'
+//require('./data/geojson');

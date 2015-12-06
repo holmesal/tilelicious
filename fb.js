@@ -14,6 +14,10 @@ export const tokenExchangeQueueRef = queueRootRef.child('tokenExchange');
 
 export const activityNomNomQueueRef = queueRootRef.child('activityNomNom');
 
+export const streamNomNomQueueRef = queueRootRef.child('streamNomNom');
+
+export const imageGenerationQueueRef = queueRootRef.child('imageGeneration');
+
 
 /**
  * Firebase locations
@@ -27,4 +31,4 @@ export const userActivityRef = (uuid) => rootRef.child(`activityByUser/${uuid}`)
 export const activityStreamRef = (activityId) => rootRef.child(`streamByActivity/${activityId}`);
 
 // uncomment to DESTROY
-//rootRef.child('streamByActivity').set(null);
+//rootRef.set(null);
