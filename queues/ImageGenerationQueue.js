@@ -14,6 +14,8 @@ import retry from 'superagent-retry';
 import {RateLimiter} from 'limiter';
 import {imageGenerationQueueRef, activityStreamRef} from './../fb';
 import Queue from 'firebase-queue';
+import streamToS3 from '../utils/s3';
+import slack from '../utils/slack';
 
 // Superagent retry requests
 retry(request);
@@ -40,14 +42,15 @@ let TILE_SIZE = 256;
 
 class StravaMap {
 
-    constructor(pixelsScreen, zScreen, bboxScreen, paperSize, mapCreds, vectorStyle, vectorScaleScale, outputFilename, backgroundColor, activities) {
+    constructor(pixelsScreen, zScreen, bboxScreen, paperSize, mapCreds, vectorStyle, vectorScaleScale, uid, backgroundColor, activities) {
         this.mapCreds = mapCreds;
         this.zScreen = zScreen;
         this.vectorStyle = vectorStyle;
         this.vectorScaleScale = vectorScaleScale;
-        this.outputFilename = outputFilename;
+        this.uid = uid;
         this.backgroundColor = backgroundColor;
         this.activities = activities;
+        this.paperSize = paperSize;
 
         // Promise for completion
         this.complete = new Promise((resolve, reject) => {
@@ -121,8 +124,9 @@ class StravaMap {
             console.info('done fetching images!');
             this.renderActivities().then(() => {
                 console.info('done drawing vectors!');
-                console.info('rendering to file!');
-                this.renderToFile();
+                this.renderToFile().then(() => {
+                    this.resolve();
+                }).catch((err) => {console.error(err); this.reject(err);})
             }).catch((err) => {console.error(err)});
         })
         .catch((err) => {console.error(err)});
@@ -197,19 +201,39 @@ class StravaMap {
                 this.ctx.drawImage(img, 0, 0);
 
                 // Render out to a png
-                let out = fs.createWriteStream(__dirname + this.outputFilename);
                 let stream = this.canvas.pngStream();
 
-                stream.on('data', function(chunk){
-                    out.write(chunk);
-                });
+                // Create a unique key for this upload
+                let key = `${this.uid}-${this.paperSize}-${Date.now()}.png`;
 
-                stream.on('end', () => {
-                    console.log('saved png');
-                    this.resolve();
-                });
+                // Render to the local filesystem
+                //this.streamToLocalFS(stream, key, resolve, reject);
+
+                // Upload to amazon s3
+                this.streamToAmazonS3(stream, key, resolve, reject);
             });
         })
+    }
+
+    streamToLocalFS(stream, key, resolve, reject) {
+        console.info('rendering to local filesystem!');
+        let out = fs.createWriteStream(__dirname + 'renders/' + key);
+        stream.on('data', function(chunk){
+            out.write(chunk);
+        });
+
+        stream.on('end', () => {
+            console.log('saved png');
+            resolve();
+        });
+    }
+
+    streamToAmazonS3(stream, key, resolve, reject) {
+        console.info('streaming to amazon s3!');
+        streamToS3(stream, key).then((details) => {
+            slack(`:frame_with_picture: new preview generated!\n${details.Location}`);
+            resolve(details);
+        }).catch(reject)
     }
 
     fetchMapboxImages() {
@@ -345,7 +369,7 @@ class StravaMap {
                 let activity = snap.val();
                 if (activity) {
                     console.info(`--- fetched data for activity ${activityId}`);
-                    console.info(activity.geojson);
+                    //console.info(activity.geojson);
                     this.renderGeoJSONVector(activity.geojson, activityId)
                         .then(() => {
                             resolve();
@@ -375,7 +399,7 @@ class StravaMap {
                 'stroke-linejoin': 'round'
             };
 
-            //console.info(geojson);
+            //console.info(geojson.features[0]);
 
             // Ensure context opacity is at 1
             this.ctx.globalAlpha = 1;
@@ -508,16 +532,16 @@ let backgroundColor = {
 
 //processSet();
 
-let filename = 'queueimage.png';
 // TODO - make this a property of print size
-let vectorScaleScale = 0.5;
+let vectorScaleScale = false;
 
 let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject) => {
     console.info('imageGeneration queue running for user: ', data.uid);
-    if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities) {
-
+    if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid) {
+        console.error('parameter missing', arguments);
+        reject('malformed queue item');
     } else {
-        let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, mapCreds[data.theme], vectorStyle[data.theme], vectorScaleScale, filename, backgroundColor[data.them], data.activities);
+        let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, mapCreds[data.theme], vectorStyle[data.theme], vectorScaleScale, data.uid, backgroundColor[data.them], data.activities);
         map.complete.then(() => {
             console.info('done!');
             resolve();
