@@ -44,16 +44,20 @@ class ActivityNomNom {
                 console.error(err, res);
             } else {
                 let activities = res;
-                console.info(`got ${activities.length} activities, starting with id: ${activities[0].id}`);
-                // Save these activities to firebase
-                this.pushActivitiesToFirebase(activities);
-                if (activities.length === PER_PAGE) {
-                    let nextPage = page + 1;
-                    console.info('page is ', page, ' next page is ', nextPage);
-                    this.fetchActivities(page + 1);
+                if (activities.length > 0) {
+                    console.info(`got ${activities.length} activities, starting with id: ${activities[0].id}`);
+                    // Save these activities to firebase
+                    this.pushActivitiesToFirebase(activities);
+                    if (activities.length === PER_PAGE) {
+                        let nextPage = page + 1;
+                        console.info('page is ', page, ' next page is ', nextPage);
+                        this.fetchActivities(page + 1);
+                    } else {
+                        console.info('done fetching activities');
+                        this.resolve();
+                    }
                 } else {
-                    console.info('done fetching activities');
-                    this.resolve();
+                    console.info(`user ${this.uid} had no activities`);
                 }
             }
         });

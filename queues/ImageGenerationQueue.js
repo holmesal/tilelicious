@@ -1,5 +1,6 @@
-import Canvas, {Image} from 'canvas';
+import Canvas, {Image, Font, Context2d} from 'canvas';
 import fs from 'fs';
+import path from 'path';
 import request from 'superagent';
 import geoViewport from 'geo-viewport';
 //import latLngToTileXY from './tileUtils';
@@ -12,10 +13,15 @@ import _ from 'lodash';
 import {getDims, screenSizes} from './../sizes';
 import retry from 'superagent-retry';
 import {RateLimiter} from 'limiter';
-import {imageGenerationQueueRef, activityStreamRef} from './../fb';
+import {imageGenerationQueueRef, activityStreamRef, rootRef} from './../fb';
 import Queue from 'firebase-queue';
 import streamToS3 from '../utils/s3';
 import slack from '../utils/slack';
+import renderText from '../utils/renderText';
+
+
+Context2d.prototype.renderText = renderText;
+console.info(Context2d);
 
 // Superagent retry requests
 retry(request);
@@ -32,6 +38,9 @@ let mapnikPool = MapnikPool(mapnik);
 // Rate-limit tile requests
 let limiter = new RateLimiter(1, 20);
 
+// Load the font
+let leagueGothic = new Font('LeagueGothicRegular', path.join(__dirname, '../assets', 'league-gothic.regular.ttf'));
+
 
 
 // Constants
@@ -41,16 +50,20 @@ let BORDER = 50;
 let TILE_SIZE = 256;
 
 class StravaMap {
-
-    constructor(pixelsScreen, zScreen, bboxScreen, paperSize, mapCreds, vectorStyle, vectorScaleScale, uid, backgroundColor, activities) {
-        this.mapCreds = mapCreds;
+    constructor(pixelsScreen, zScreen, bboxScreen, paperSize, theme, vectorScaleScale, uid, activities, imageLocation, text) {
+        this.textColor = theme.textColor;
+        this.mapCreds = theme.mapCreds;
         this.zScreen = zScreen;
-        this.vectorStyle = vectorStyle;
+        this.vectorStyle = theme.vectorStyle;
         this.vectorScaleScale = vectorScaleScale;
         this.uid = uid;
-        this.backgroundColor = backgroundColor;
+        this.backgroundColor = theme.backgroundColor;
         this.activities = activities;
         this.paperSize = paperSize;
+        this.imageLocation = imageLocation;
+        this.text = text;
+
+        this.startTime = Date.now();
 
         // Promise for completion
         this.complete = new Promise((resolve, reject) => {
@@ -63,9 +76,12 @@ class StravaMap {
 
         // Get the pixel dimensions to print at this paper size
         this.pixelsPrint = getDims(paperSize);
+        // Calc some useful dimensions
+        this.calcPixels();
+        console.info(paperSize, this.pixelsPrint);
 
         // How much bigger is the paper than the screen?
-        let widthScaleFactor = this.pixelsPrint.w / pixelsScreen.w;
+        let widthScaleFactor = this.pixelsPrint.mapWidth / pixelsScreen.w;
 
         // How many zoom levels do we have to go up to cover this screen
         let zSteps;
@@ -140,14 +156,22 @@ class StravaMap {
 
     }
 
+    calcPixels() {
+        let mapUpperLeftX = Math.floor((this.pixelsPrint.printWidth - this.pixelsPrint.mapWidth) / 2);
+        this.locations = {
+            mapUpperLeft: {
+                x: mapUpperLeftX,
+                y: this.pixelsPrint.paddingTop
+            }
+        }
+    }
+
     initGeo() {
         // First, get the bounds of the viewport, using:
         //   * the pixel dimensions of the mask
         //   * the geographic center
         //   * the zoom level
         // W-S-E-N
-        //let bbox = geoViewport.bounds(center, z, [this.pixelsPrint.w, this.pixelsPrint.h]);
-        //this.bbox = bbox;
 
         // Next, find the tile extent that covers bbox
         this.xyzBounds = sm.xyz(this.bbox, this.tileZ);
@@ -177,16 +201,34 @@ class StravaMap {
     }
 
     initCanvas() {
-        this.canvas = new Canvas(this.pixelsPrint.w, this.pixelsPrint.h);
+        // Create a canvas for the print
+        this.canvas = new Canvas(this.pixelsPrint.printWidth, this.pixelsPrint.printHeight);
         this.ctx = this.canvas.getContext('2d');
-        // Draw a background
-        this.drawBackground(this.backgroundColor);
+
+        // Add the font
+        this.ctx.addFont(leagueGothic);
+
+        // Create an intermediate canvas to hold image tiles
+        // This makes it easy to render image tiles "off the edge" of this canvas without having to fuck with masking
+        // each and every time
+        this.mapCanvas = new Canvas(this.pixelsPrint.mapWidth, this.pixelsPrint.mapHeight);
+        this.mapCtx = this.mapCanvas.getContext('2d');
+
+        // Fill the canvas with white
+        this.fillPaperBackground('#FFFFFF');
+        // Fill the map background with map color
+        // This makes cracks less apparent
+        this.fillMapBackground(this.backgroundColor);
     }
 
-    drawBackground(color) {
-        this.ctx.rect(0, 0, this.pixelsPrint.w, this.pixelsPrint.h);
+    fillPaperBackground(color) {
         this.ctx.fillStyle = color;
-        this.ctx.fill();
+        this.ctx.fillRect(0, 0, this.pixelsPrint.printWidth, this.pixelsPrint.printHeight);
+    }
+
+    fillMapBackground(color) {
+        this.ctx.fillStyle = color;
+        this.ctx.fillRect(this.locations.mapUpperLeft.x, this.pixelsPrint.paddingTop, this.pixelsPrint.mapWidth, this.pixelsPrint.mapHeight);
     }
 
     renderToFile() {
@@ -198,7 +240,12 @@ class StravaMap {
                 if (err) {reject(err); return}
                 let img = new Image;
                 img.src = buffer;
-                this.ctx.drawImage(img, 0, 0);
+
+                // Draw the map
+                this.drawVectorsToCanvas(img);
+
+                // Draw the text
+                this.drawTextToCanvas();
 
                 // Render out to a png
                 let stream = this.canvas.pngStream();
@@ -213,6 +260,33 @@ class StravaMap {
                 this.streamToAmazonS3(stream, key, resolve, reject);
             });
         })
+    }
+
+    drawVectorsToCanvas(img) {
+        console.info('drawing map starting at ', this.locations.mapUpperLeft.x, img.width, img.height);
+        this.ctx.drawImage(img, this.locations.mapUpperLeft.x, this.locations.mapUpperLeft.y, this.pixelsPrint.mapWidth, this.pixelsPrint.mapHeight);
+    }
+
+    drawTextToCanvas() {
+        let {printHeight, printWidth, paddingTop, mapHeight, mapWidth, fontSize, letterSpacing} = this.pixelsPrint;
+        // Figure out the top left of the rectangle
+        let bottomAreaHeight = printHeight - mapHeight - paddingTop;
+        // Text is drawn from the lower-left! Importante!
+        let relTextY = bottomAreaHeight / 2;
+        let textY = paddingTop + mapHeight + relTextY;
+
+        // Measure the text
+        this.ctx.font = `${fontSize}px LeagueGothicRegular`;
+        let textWidth = Math.floor(this.ctx.measureText(this.text).width);
+        let textX = this.locations.mapUpperLeft.x + (mapWidth) / 2;
+        console.info('text width is', textWidth, 'and is at x', textX);
+
+        // Draw a red rectangle for now
+        this.ctx.fillStyle = this.textColor;
+        this.ctx.textAlign = 'center';
+        //this.ctx.fillRect(textX, textY, textWidth, fontSize);
+        //this.ctx.fillText(this.text, textX, textY, 0);
+        this.ctx.renderText(this.text, textX+letterSpacing/2, textY, letterSpacing);
     }
 
     streamToLocalFS(stream, key, resolve, reject) {
@@ -231,9 +305,24 @@ class StravaMap {
     streamToAmazonS3(stream, key, resolve, reject) {
         console.info('streaming to amazon s3!');
         streamToS3(stream, key).then((details) => {
-            slack(`:frame_with_picture: new preview generated!\n${details.Location}`);
-            resolve(details);
+            let elapsed = Math.round((Date.now() - this.startTime) / 100)/10;
+            let url = details.Location;
+            slack(`:frame_with_picture: new *${this.paperSize}* generated in *${elapsed}s*!\n${url}`);
+            this.pointFirebaseToS3(url, elapsed);
+            resolve(details.Location);
         }).catch(reject)
+    }
+
+    pointFirebaseToS3(location, time) {
+        if (this.imageLocation) {
+            let completedImageRef = rootRef.child(this.imageLocation);
+            completedImageRef.set({
+                url: location,
+                generationTime: time
+            })
+        } else {
+            console.info('no complete firebase location provided');
+        }
     }
 
     fetchMapboxImages() {
@@ -282,6 +371,8 @@ class StravaMap {
             }
             Promise.all(promises)
                 .then(() => {
+                    // Draw map canvas to print canvas
+                    this.drawMapCanvasToPrintCanvas()
                     resolve();
                 }).catch((err) => {reject(err)})
         });
@@ -313,22 +404,26 @@ class StravaMap {
     }
 
     renderTile(tileBuffer, x, y) {
-        console.info(x, y);
         // Create a new image
         let img = new Image;
         img.src = tileBuffer;
         // Fade the basemap, if needed
-        this.ctx.globalAlpha = basemapOpacity;
-        // Draw
-        this.ctx.drawImage(img, Math.floor(x), Math.floor(y), Math.floor(TILE_SIZE * this.tileScaleFactor), Math.floor(TILE_SIZE * this.tileScaleFactor));
+        //this.ctx.globalAlpha = basemapOpacity;
         // Reset opacity
-        this.ctx.globalAlpha = 1;
+        this.mapCtx.globalAlpha = 1;
+        // Draw
+        this.mapCtx.drawImage(img, Math.floor(x), Math.floor(y), Math.floor(TILE_SIZE * this.tileScaleFactor), Math.floor(TILE_SIZE * this.tileScaleFactor));
         // If debugging, stroke tile
         if (debug) {
-            this.ctx.rect(x, y, TILE_SIZE * this.tileScaleFactor, TILE_SIZE * this.tileScaleFactor);
-            this.ctx.strokeStyle = 'rgba(255,0,0,0.7)';
-            this.ctx.stroke();
+            this.mapCtx.rect(x, y, TILE_SIZE * this.tileScaleFactor, TILE_SIZE * this.tileScaleFactor);
+            this.mapCtx.strokeStyle = 'rgba(255,0,0,0.7)';
+            this.mapCtx.stroke();
         }
+    }
+
+    drawMapCanvasToPrintCanvas() {
+        let img = this.mapCanvas.toBuffer();
+        this.ctx.drawImage(this.mapCanvas, this.locations.mapUpperLeft.x, this.locations.mapUpperLeft.y, this.pixelsPrint.mapWidth, this.pixelsPrint.mapHeight);
     }
 
     renderActivities() {
@@ -338,10 +433,10 @@ class StravaMap {
             mapnik.register_default_input_plugins();
 
             // Create the output image
-            this.im = new mapnik.Image(this.pixelsPrint.w, this.pixelsPrint.h);
+            this.im = new mapnik.Image(this.pixelsPrint.mapWidth, this.pixelsPrint.mapHeight);
 
             // Create a mapnik pool
-            this.pool = new mapnikPool.fromString('<Map></Map>', {size: {width: this.pixelsPrint.w, height: this.pixelsPrint.h}});
+            this.pool = new mapnikPool.fromString('<Map></Map>', {size: {width: this.pixelsPrint.mapWidth, height: this.pixelsPrint.mapHeight}});
 
             //// Render the activites
             let promises = [];
@@ -439,37 +534,33 @@ class StravaMap {
 
 
 // light
-
-
-// dark
-let mapCreds = {
+let themes = {
     dark: {
-        mapId: 'mkulp.84ae055a',
-        accessToken: 'pk.eyJ1IjoibWt1bHAiLCJhIjoiY2loc2V6aWVtMDBweHRma2g3N29mMXRzaSJ9.Qpo0BatZeR2genlYpumd5Q'
+        mapCreds: {
+            mapId: 'mkulp.84ae055a',
+            accessToken: 'pk.eyJ1IjoibWt1bHAiLCJhIjoiY2loc2V6aWVtMDBweHRma2g3N29mMXRzaSJ9.Qpo0BatZeR2genlYpumd5Q'
+        },
+        vectorStyle: {
+            opacity: 0.15,
+            stroke: '#FFFFFF',
+            strokeWidth: 1
+        },
+        backgroundColor: '#202020',
+        textColor: '#202020'
     },
     light: {
-        mapId: 'matthewkulp.789e1a95',
-        accessToken: 'pk.eyJ1IjoibWF0dGhld2t1bHAiLCJhIjoiY2loNzVzYXpiMGhubnVla3R2NGNvcG1mZSJ9.F_fiMIojh6Dg5kA_-RERMw'
+        mapCreds: {
+            mapId: 'matthewkulp.789e1a95',
+            accessToken: 'pk.eyJ1IjoibWF0dGhld2t1bHAiLCJhIjoiY2loNzVzYXpiMGhubnVla3R2NGNvcG1mZSJ9.F_fiMIojh6Dg5kA_-RERMw'
+        },
+        vectorStyle: {
+            opacity: 0.15,
+            stroke: '#000000',
+            strokeWidth: 1
+        },
+        backgroundColor: '#FFFFFF',
+        textColor: '#202020'
     }
-};
-
-let vectorStyle = {
-    dark: {
-        opacity: 0.15,
-        stroke: '#FFFFFF',
-        strokeWidth: 1
-    },
-    light: {
-        opacity: 0.15,
-        stroke: '#000000',
-        strokeWidth: 1
-    }
-
-};
-
-let backgroundColor = {
-    dark: '#000000',
-    light: '#FFFFFF'
 };
 
 // light
@@ -537,11 +628,11 @@ let vectorScaleScale = false;
 
 let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject) => {
     console.info('imageGeneration queue running for user: ', data.uid);
-    if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid) {
-        console.error('parameter missing', arguments);
+    if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
+        console.error('parameter missing', data);
         reject('malformed queue item');
     } else {
-        let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, mapCreds[data.theme], vectorStyle[data.theme], vectorScaleScale, data.uid, backgroundColor[data.them], data.activities);
+        let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
         map.complete.then(() => {
             console.info('done!');
             resolve();
