@@ -464,7 +464,7 @@ class StravaMap {
             activityStreamRef(activityId).once('value', (snap) => {
                 let activity = snap.val();
                 if (activity) {
-                    console.info(`--- fetched data for activity ${activityId}`);
+                    console.info(`--- fetched data for activity ${activityId}`, activity);
                     //console.info(activity.geojson);
                     this.renderGeoJSONVector(activity.geojson, activityId)
                         .then(() => {
@@ -505,7 +505,7 @@ class StravaMap {
             let xml = mapnikify(geojson, false, (err, xml) => {
                 //console.log(xml);
                 this.pool.acquire((err, map) => {
-                    if (err) console.info(err);
+                    if (err) dumpError(err);
                     map.fromString(xml, {}, (err, map) => {
                         //map.zoomAll();
 

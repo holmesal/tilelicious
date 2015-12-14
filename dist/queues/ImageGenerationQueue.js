@@ -573,7 +573,7 @@ var StravaMap = (function () {
                 (0, _fb.activityStreamRef)(activityId).once('value', function (snap) {
                     var activity = snap.val();
                     if (activity) {
-                        console.info('--- fetched data for activity ' + activityId);
+                        console.info('--- fetched data for activity ' + activityId, activity);
                         //console.info(activity.geojson);
                         _this7.renderGeoJSONVector(activity.geojson, activityId).then(function () {
                             resolve();
@@ -614,7 +614,7 @@ var StravaMap = (function () {
                 var xml = (0, _geojsonMapnikify2.default)(geojson, false, function (err, xml) {
                     //console.log(xml);
                     _this8.pool.acquire(function (err, map) {
-                        if (err) console.info(err);
+                        if (err) (0, _errors2.default)(err);
                         map.fromString(xml, {}, function (err, map) {
                             //map.zoomAll();
 
