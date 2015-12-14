@@ -18,6 +18,7 @@ import Queue from 'firebase-queue';
 import streamToS3 from '../utils/s3';
 import slack from '../utils/slack';
 import renderText from '../utils/renderText';
+import dumpError from '../utils/errors';
 
 // Shim with custom text rendering function
 Context2d.prototype.renderText = renderText;
@@ -142,10 +143,10 @@ class StravaMap {
                 console.info('done drawing vectors!');
                 this.renderToFile().then(() => {
                     this.resolve();
-                }).catch((err) => {console.error(err); this.reject(err);})
-            }).catch((err) => {console.error(err); this.reject(err);});
+                }).catch((err) => {dumpError(err); this.reject(err);})
+            }).catch((err) => {dumpError(err); this.reject(err);});
         })
-        .catch((err) => {console.error(err); this.reject(err);});
+        .catch((err) => {dumpError(err); this.reject(err);});
 
 
         //this.renderActivities().then(() => {
@@ -362,7 +363,7 @@ class StravaMap {
                             // Done with all tile operations
                             resolveTile();
                         }).catch((err) => {
-                            console.error('error fetching tile', err); throw new Error(err); reject(err)
+                            console.error('error fetching tile', err); dumpError(err); reject(err);
                         });
 
                     });
@@ -393,7 +394,7 @@ class StravaMap {
                     .timeout(10000)
                     .end((err, res) => {
                         if (err) {
-                            console.error(err);
+                            dumpError(err);
                             reject(err);
                         } else {
                             resolve(res.body)
@@ -639,7 +640,8 @@ let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject)
             resolve();
         })
         .catch((err) => {
-            console.error(err);
+            console.error('image generation request failed')
+            dumpError(err);
             reject(err);
         })
     }

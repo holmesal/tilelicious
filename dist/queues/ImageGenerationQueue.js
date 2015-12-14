@@ -73,6 +73,10 @@ var _renderText = require('../utils/renderText');
 
 var _renderText2 = _interopRequireDefault(_renderText);
 
+var _errors = require('../utils/errors');
+
+var _errors2 = _interopRequireDefault(_errors);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -204,13 +208,13 @@ var StravaMap = (function () {
                 _this.renderToFile().then(function () {
                     _this.resolve();
                 }).catch(function (err) {
-                    console.error(err);_this.reject(err);
+                    (0, _errors2.default)(err);_this.reject(err);
                 });
             }).catch(function (err) {
-                console.error(err);_this.reject(err);
+                (0, _errors2.default)(err);_this.reject(err);
             });
         }).catch(function (err) {
-            console.error(err);_this.reject(err);
+            (0, _errors2.default)(err);_this.reject(err);
         });
 
         //this.renderActivities().then(() => {
@@ -453,7 +457,7 @@ var StravaMap = (function () {
                                 // Done with all tile operations
                                 resolveTile();
                             }).catch(function (err) {
-                                console.error('error fetching tile', err);throw new Error(err);reject(err);
+                                console.error('error fetching tile', err);(0, _errors2.default)(err);reject(err);
                             });
                         });
                         promises.push(tilePromise);
@@ -491,7 +495,7 @@ var StravaMap = (function () {
                 limiter.removeTokens(1, function () {
                     _superagent2.default.get(url).retry(5).timeout(10000).end(function (err, res) {
                         if (err) {
-                            console.error(err);
+                            (0, _errors2.default)(err);
                             reject(err);
                         } else {
                             resolve(res.body);
@@ -744,7 +748,8 @@ var queue = new _firebaseQueue2.default(_fb.imageGenerationQueueRef, function (d
             console.info('done!');
             resolve();
         }).catch(function (err) {
-            console.error(err);
+            console.error('image generation request failed');
+            (0, _errors2.default)(err);
             reject(err);
         });
     }
