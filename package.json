@@ -14,7 +14,7 @@
   "dependencies": {
     "async": "^1.5.0",
     "aws-sdk": "^2.2.21",
-    "canvas": "~1.1.5",
+    "canvas": "holmesal/node-canvas#nopango",
     "firebase": "^2.3.2",
     "firebase-queue": "^1.2.1",
     "geo-viewport": "^0.1.1",
