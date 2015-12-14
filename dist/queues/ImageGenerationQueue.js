@@ -11,6 +11,10 @@ var _fs = require('fs');
 
 var _fs2 = _interopRequireDefault(_fs);
 
+var _util = require('util');
+
+var _util2 = _interopRequireDefault(_util);
+
 var _path = require('path');
 
 var _path2 = _interopRequireDefault(_path);
@@ -98,7 +102,7 @@ var mapnikPool = (0, _mapnikPool2.default)(_mapnik2.default);
 
 // Rate-limit tile requests
 //let limiter = new RateLimiter(1, 20);
-var limiter = new _limiter.RateLimiter(1, 0);
+var limiter = new _limiter.RateLimiter(1, 20);
 
 // Load the font
 var fontPath = '/assets/league-gothic.regular.ttf';
@@ -207,6 +211,7 @@ var StravaMap = (function () {
             _this.renderActivities().then(function () {
                 console.info('done drawing vectors!');
                 _this.renderToFile().then(function () {
+                    _this.cleanup();
                     _this.resolve();
                 }).catch(function (err) {
                     (0, _errors2.default)(err);_this.reject(err);
@@ -640,6 +645,14 @@ var StravaMap = (function () {
                     });
                 });
             });
+        }
+    }, {
+        key: 'cleanup',
+        value: function cleanup() {
+            console.log(_util2.default.inspect(process.memoryUsage()));
+            console.info('cleaning up...');
+            this.pool.destroy();
+            console.log(_util2.default.inspect(process.memoryUsage()));
         }
     }]);
 

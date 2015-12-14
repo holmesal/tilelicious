@@ -1,5 +1,6 @@
 import Canvas, {Image, Font, Context2d} from 'canvas';
 import fs from 'fs';
+import util from 'util';
 import path from 'path';
 import request from 'superagent';
 import geoViewport from 'geo-viewport';
@@ -37,7 +38,7 @@ let mapnikPool = MapnikPool(mapnik);
 
 // Rate-limit tile requests
 //let limiter = new RateLimiter(1, 20);
-let limiter = new RateLimiter(1, 0);
+let limiter = new RateLimiter(1, 20);
 
 // Load the font
 let fontPath = '/assets/league-gothic.regular.ttf';
@@ -143,6 +144,7 @@ class StravaMap {
             this.renderActivities().then(() => {
                 console.info('done drawing vectors!');
                 this.renderToFile().then(() => {
+                    this.cleanup();
                     this.resolve();
                 }).catch((err) => {dumpError(err); this.reject(err);})
             }).catch((err) => {dumpError(err); this.reject(err);});
@@ -530,6 +532,13 @@ class StravaMap {
                 })
             });
         });
+    }
+
+    cleanup() {
+        console.log(util.inspect(process.memoryUsage()));
+        console.info('cleaning up...')
+        this.pool.destroy();
+        console.log(util.inspect(process.memoryUsage()));
     }
 }
 
