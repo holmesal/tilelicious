@@ -10,10 +10,10 @@ import MapnikPool from 'mapnik-pool';
 import toGeoJSON from 'togeojson';
 import mapnikify from 'geojson-mapnikify';
 import _ from 'lodash';
-import {getDims, screenSizes} from './../sizes';
+import {getDims, screenSizes} from '../utils/sizes';
 import retry from 'superagent-retry';
 import {RateLimiter} from 'limiter';
-import {imageGenerationQueueRef, activityStreamRef, rootRef} from './../fb';
+import {imageGenerationQueueRef, activityStreamRef, rootRef} from '../utils/fb';
 import Queue from 'firebase-queue';
 import streamToS3 from '../utils/s3';
 import slack from '../utils/slack';
@@ -38,7 +38,7 @@ let mapnikPool = MapnikPool(mapnik);
 let limiter = new RateLimiter(1, 20);
 
 // Load the font
-let leagueGothic = new Font('LeagueGothicRegular', path.join(__dirname, '../assets', 'league-gothic.regular.ttf'));
+let leagueGothic = new Font('LeagueGothicRegular', path.join(__dirname, '../../assets', 'league-gothic.regular.ttf'));
 
 
 

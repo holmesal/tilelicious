@@ -1,4 +1,4 @@
-import {tokenExchangeQueueRef, uidByCodeRef, userRef, activityNomNomQueueRef} from '../fb';
+import {tokenExchangeQueueRef, uidByCodeRef, userRef, activityNomNomQueueRef} from '../utils/fb';
 import Queue from 'firebase-queue';
 import strava from 'strava-v3';
 

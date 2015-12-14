@@ -4,6 +4,8 @@
   "description": "render tiles to static images",
   "main": "index.js",
   "scripts": {
+    "build": "babel index.js -o built.js",
+    "run": "nodemon babel.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "babel-node": "babel-node --stage 0 --ignore='foo|bar|baz'"
   },

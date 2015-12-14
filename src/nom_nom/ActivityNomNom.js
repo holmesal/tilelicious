@@ -1,6 +1,6 @@
 import strava from 'strava-v3';
 import _ from 'lodash';
-import {userRef, userActivityRef, activityNomNomQueueRef} from './../fb';
+import {userRef, userActivityRef, activityNomNomQueueRef} from '../utils/fb';
 import StreamNomNom from './StreamNomNom';
 import Queue from 'firebase-queue';
 
