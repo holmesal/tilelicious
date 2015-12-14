@@ -38,7 +38,7 @@ let mapnikPool = MapnikPool(mapnik);
 let limiter = new RateLimiter(1, 20);
 
 // Load the font
-let leagueGothic = new Font('LeagueGothicRegular', './assets/league-gothic.regular.ttf');
+let leagueGothic = new Font('LeagueGothicRegular', process.env.PWD + '/assets/league-gothic.regular.ttf');
 
 
 

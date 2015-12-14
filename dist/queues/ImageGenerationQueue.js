@@ -96,7 +96,7 @@ var mapnikPool = (0, _mapnikPool2.default)(_mapnik2.default);
 var limiter = new _limiter.RateLimiter(1, 20);
 
 // Load the font
-var leagueGothic = new _canvas.Font('LeagueGothicRegular', './assets/league-gothic.regular.ttf');
+var leagueGothic = new _canvas.Font('LeagueGothicRegular', process.env.PWD + '/assets/league-gothic.regular.ttf');
 
 // Constants
 // should this change per image size?
