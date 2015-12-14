@@ -573,7 +573,7 @@ var StravaMap = (function () {
                 (0, _fb.activityStreamRef)(activityId).once('value', function (snap) {
                     var activity = snap.val();
                     if (activity) {
-                        console.info('--- fetched data for activity ' + activityId, activity);
+                        console.info('--- fetched data for activity ' + activityId);
                         //console.info(activity.geojson);
                         _this7.renderGeoJSONVector(activity.geojson, activityId).then(function () {
                             resolve();

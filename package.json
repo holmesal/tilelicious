@@ -24,7 +24,7 @@
     "limiter": "^1.1.0",
     "lodash": "^3.10.1",
     "mapnik": "^3.4.10",
-    "mapnik-pool": "^0.1.2",
+    "mapnik-pool": "holmesal/mapnik-pool",
     "s3-upload-stream": "^1.0.7",
     "slack-client": "^1.5.0",
     "sphericalmercator": "^1.0.4",

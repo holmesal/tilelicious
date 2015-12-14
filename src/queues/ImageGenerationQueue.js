@@ -464,7 +464,7 @@ class StravaMap {
             activityStreamRef(activityId).once('value', (snap) => {
                 let activity = snap.val();
                 if (activity) {
-                    console.info(`--- fetched data for activity ${activityId}`, activity);
+                    console.info(`--- fetched data for activity ${activityId}`);
                     //console.info(activity.geojson);
                     this.renderGeoJSONVector(activity.geojson, activityId)
                         .then(() => {
