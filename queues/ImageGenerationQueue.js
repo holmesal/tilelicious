@@ -19,9 +19,8 @@ import streamToS3 from '../utils/s3';
 import slack from '../utils/slack';
 import renderText from '../utils/renderText';
 
-
+// Shim with custom text rendering function
 Context2d.prototype.renderText = renderText;
-console.info(Context2d);
 
 // Superagent retry requests
 retry(request);
@@ -143,9 +142,9 @@ class StravaMap {
                 this.renderToFile().then(() => {
                     this.resolve();
                 }).catch((err) => {console.error(err); this.reject(err);})
-            }).catch((err) => {console.error(err)});
+            }).catch((err) => {console.error(err); this.reject(err);});
         })
-        .catch((err) => {console.error(err)});
+        .catch((err) => {console.error(err); this.reject(err);});
 
 
         //this.renderActivities().then(() => {
@@ -215,7 +214,7 @@ class StravaMap {
         this.mapCtx = this.mapCanvas.getContext('2d');
 
         // Fill the canvas with white
-        this.fillPaperBackground('#FFFFFF');
+        //this.fillPaperBackground('#FFFFFF');
         // Fill the map background with map color
         // This makes cracks less apparent
         this.fillMapBackground(this.backgroundColor);
@@ -624,10 +623,11 @@ let themes = {
 //processSet();
 
 // TODO - make this a property of print size
-let vectorScaleScale = false;
+let vectorScaleScale = 0.65;
 
 let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject) => {
     console.info('imageGeneration queue running for user: ', data.uid);
+    console.info(data);
     if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
         console.error('parameter missing', data);
         reject('malformed queue item');
@@ -636,7 +636,11 @@ let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject)
         map.complete.then(() => {
             console.info('done!');
             resolve();
-        });
+        })
+        .catch((err) => {
+            console.error(err);
+            reject(err);
+        })
     }
 });
 
