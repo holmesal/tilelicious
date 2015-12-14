@@ -36,7 +36,8 @@ let basemapOpacity = 1;               // fade the basemap
 let mapnikPool = MapnikPool(mapnik);
 
 // Rate-limit tile requests
-let limiter = new RateLimiter(1, 20);
+//let limiter = new RateLimiter(1, 20);
+let limiter = new RateLimiter(1, 0);
 
 // Load the font
 let fontPath = '/assets/league-gothic.regular.ttf';

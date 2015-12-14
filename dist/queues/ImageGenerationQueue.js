@@ -97,7 +97,8 @@ var basemapOpacity = 1; // fade the basemap
 var mapnikPool = (0, _mapnikPool2.default)(_mapnik2.default);
 
 // Rate-limit tile requests
-var limiter = new _limiter.RateLimiter(1, 20);
+//let limiter = new RateLimiter(1, 20);
+var limiter = new _limiter.RateLimiter(1, 0);
 
 // Load the font
 var fontPath = '/assets/league-gothic.regular.ttf';
