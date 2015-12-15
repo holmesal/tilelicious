@@ -105,7 +105,7 @@ var mapnikPool = (0, _mapnikPool2.default)(_mapnik2.default);
 var limiter = new _limiter.RateLimiter(1, 20);
 
 // Load the font
-var fontPath = '/assets/league-gothic.regular.ttf';
+var fontPath = '/assets/Victorious-LeagueGothic-Regular.otf';
 console.info(fontPath);
 console.info(process.env.PWD + fontPath);
 var leagueGothic = new _canvas.Font('LeagueGothicRegular', process.env.PWD + fontPath);
@@ -352,6 +352,8 @@ var StravaMap = (function () {
     }, {
         key: 'drawTextToCanvas',
         value: function drawTextToCanvas() {
+            // Insert spaces between each character
+            var text = this.text.split('').join(' ');
             var _pixelsPrint = this.pixelsPrint;
             var printHeight = _pixelsPrint.printHeight;
             var printWidth = _pixelsPrint.printWidth;
@@ -369,7 +371,7 @@ var StravaMap = (function () {
 
             // Measure the text
             this.ctx.font = fontSize + 'px LeagueGothicRegular';
-            var textWidth = Math.floor(this.ctx.measureText(this.text).width);
+            var textWidth = Math.floor(this.ctx.measureText(text).width);
             var textX = this.locations.mapUpperLeft.x + mapWidth / 2;
             console.info('text width is', textWidth, 'and is at x', textX);
 
@@ -377,8 +379,8 @@ var StravaMap = (function () {
             this.ctx.fillStyle = this.textColor;
             this.ctx.textAlign = 'center';
             //this.ctx.fillRect(textX, textY, textWidth, fontSize);
-            //this.ctx.fillText(this.text, textX, textY, 0);
-            this.ctx.renderText(this.text, textX + letterSpacing / 2, textY, letterSpacing);
+            this.ctx.fillText(text, textX, textY, 0);
+            //this.ctx.renderText(this.text, textX+letterSpacing/2, textY, letterSpacing);
         }
     }, {
         key: 'streamToLocalFS',
@@ -403,7 +405,7 @@ var StravaMap = (function () {
             (0, _s2.default)(stream, key).then(function (details) {
                 var elapsed = Math.round((Date.now() - _this3.startTime) / 100) / 10;
                 var url = details.Location;
-                (0, _slack2.default)('*' + _this3.text + '* :frame_with_picture: new *' + _this3.paperSize + '* generated in *' + elapsed + 's*!\n' + url);
+                (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* _"' + _this3.text + '"_ generated in *' + elapsed + 's*!\n' + url);
                 _this3.pointFirebaseToS3(url, elapsed);
                 resolve(details.Location);
             }).catch(reject);

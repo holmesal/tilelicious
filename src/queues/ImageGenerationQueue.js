@@ -41,7 +41,7 @@ let mapnikPool = MapnikPool(mapnik);
 let limiter = new RateLimiter(1, 20);
 
 // Load the font
-let fontPath = '/assets/league-gothic.regular.ttf';
+let fontPath = '/assets/Victorious-LeagueGothic-Regular.otf';
 console.info(fontPath);
 console.info(process.env.PWD + fontPath);
 let leagueGothic = new Font('LeagueGothicRegular', process.env.PWD + fontPath);
@@ -272,6 +272,8 @@ class StravaMap {
     }
 
     drawTextToCanvas() {
+        // Insert spaces between each character
+        let text = this.text.split('').join(' ');
         let {printHeight, printWidth, paddingTop, mapHeight, mapWidth, fontSize, letterSpacing} = this.pixelsPrint;
         // Figure out the top left of the rectangle
         let bottomAreaHeight = printHeight - mapHeight - paddingTop;
@@ -281,7 +283,7 @@ class StravaMap {
 
         // Measure the text
         this.ctx.font = `${fontSize}px LeagueGothicRegular`;
-        let textWidth = Math.floor(this.ctx.measureText(this.text).width);
+        let textWidth = Math.floor(this.ctx.measureText(text).width);
         let textX = this.locations.mapUpperLeft.x + (mapWidth) / 2;
         console.info('text width is', textWidth, 'and is at x', textX);
 
@@ -289,8 +291,8 @@ class StravaMap {
         this.ctx.fillStyle = this.textColor;
         this.ctx.textAlign = 'center';
         //this.ctx.fillRect(textX, textY, textWidth, fontSize);
-        //this.ctx.fillText(this.text, textX, textY, 0);
-        this.ctx.renderText(this.text, textX+letterSpacing/2, textY, letterSpacing);
+        this.ctx.fillText(text, textX, textY, 0);
+        //this.ctx.renderText(this.text, textX+letterSpacing/2, textY, letterSpacing);
     }
 
     streamToLocalFS(stream, key, resolve, reject) {
@@ -311,7 +313,7 @@ class StravaMap {
         streamToS3(stream, key).then((details) => {
             let elapsed = Math.round((Date.now() - this.startTime) / 100)/10;
             let url = details.Location;
-            slack(`*${this.text}* :frame_with_picture: new *${this.paperSize}* generated in *${elapsed}s*!\n${url}`);
+            slack(`:frame_with_picture: new *${this.paperSize}* _"${this.text}"_ generated in *${elapsed}s*!\n${url}`);
             this.pointFirebaseToS3(url, elapsed);
             resolve(details.Location);
         }).catch(reject)
