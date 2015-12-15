@@ -316,7 +316,7 @@ var StravaMap = (function () {
                 // Encode the mapnik map as a png
                 // Encode as a png
                 _this2.im.encode('png', function (err, buffer) {
-                    console.info('vector buffer', buffer);
+                    //console.info('vector buffer', buffer);
                     if (err) {
                         reject(err);return;
                     }
@@ -403,7 +403,7 @@ var StravaMap = (function () {
             (0, _s2.default)(stream, key).then(function (details) {
                 var elapsed = Math.round((Date.now() - _this3.startTime) / 100) / 10;
                 var url = details.Location;
-                (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* generated in *' + elapsed + 's*!\n' + url);
+                (0, _slack2.default)('*' + _this3.text + '* :frame_with_picture: new *' + _this3.paperSize + '* generated in *' + elapsed + 's*!\n' + url);
                 _this3.pointFirebaseToS3(url, elapsed);
                 resolve(details.Location);
             }).catch(reject);

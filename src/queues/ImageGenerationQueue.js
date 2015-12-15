@@ -240,7 +240,7 @@ class StravaMap {
             // Encode the mapnik map as a png
             // Encode as a png
             this.im.encode('png', (err, buffer) => {
-                console.info('vector buffer', buffer);
+                //console.info('vector buffer', buffer);
                 if (err) {reject(err); return}
                 let img = new Image;
                 img.src = buffer;
@@ -311,7 +311,7 @@ class StravaMap {
         streamToS3(stream, key).then((details) => {
             let elapsed = Math.round((Date.now() - this.startTime) / 100)/10;
             let url = details.Location;
-            slack(`:frame_with_picture: new *${this.paperSize}* generated in *${elapsed}s*!\n${url}`);
+            slack(`*${this.text}* :frame_with_picture: new *${this.paperSize}* generated in *${elapsed}s*!\n${url}`);
             this.pointFirebaseToS3(url, elapsed);
             resolve(details.Location);
         }).catch(reject)
