@@ -20,6 +20,7 @@
     "geo-viewport": "^0.1.1",
     "geojson": "^0.2.1",
     "geojson-mapnikify": "^0.6.1",
+    "http-proxy": "^1.12.0",
     "jsdom": "^7.1.0",
     "limiter": "^1.1.0",
     "lodash": "^3.10.1",
