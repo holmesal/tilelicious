@@ -2,6 +2,8 @@ import {tokenExchangeQueueRef, uidByCodeRef, userRef, activityNomNomQueueRef} fr
 import Queue from 'firebase-queue';
 import strava from 'strava-v3';
 
+console.info('token exchange queue up and running!');
+
 let queue = new Queue(tokenExchangeQueueRef, (data, progress, resolve, reject) => {
     let code = data.code;
     console.log('exchanging token for', code);

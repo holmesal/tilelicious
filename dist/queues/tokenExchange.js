@@ -12,6 +12,8 @@ var _stravaV2 = _interopRequireDefault(_stravaV);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+console.info('token exchange queue up and running!');
+
 var queue = new _firebaseQueue2.default(_fb.tokenExchangeQueueRef, function (data, progress, resolve, reject) {
     var code = data.code;
     console.log('exchanging token for', code);

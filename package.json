@@ -4,7 +4,8 @@
   "description": "render tiles to static images",
   "main": "index.js",
   "scripts": {
-    "build": "babel index.js -o built.js",
+    "build": "babel src --out-dir dist",
+    "watch": "babel src --watch --out-dir dist",
     "run": "nodemon babel.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "babel-node": "babel-node --stage 0 --ignore='foo|bar|baz'"
@@ -30,6 +31,7 @@
     "slack-client": "^1.5.0",
     "sphericalmercator": "^1.0.4",
     "strava-v3": "^1.8.1",
+    "stripe": "^4.1.0",
     "superagent": "^1.4.0",
     "superagent-retry": "holmesal/superagent-retry",
     "togeojson": "^0.13.0"

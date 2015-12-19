@@ -143,9 +143,9 @@ class StravaMap {
             console.info('done fetching images!');
             this.renderActivities().then(() => {
                 console.info('done drawing vectors!');
-                this.renderToFile().then(() => {
+                this.renderToFile().then((url) => {
                     this.cleanup();
-                    this.resolve();
+                    this.resolve(url);
                 }).catch((err) => {dumpError(err); this.reject(err);})
             }).catch((err) => {dumpError(err); this.reject(err);});
         })
@@ -315,7 +315,7 @@ class StravaMap {
             let url = details.Location;
             slack(`:frame_with_picture: new *${this.paperSize}* _"${this.text}"_ generated in *${elapsed}s*!\n${url}`);
             this.pointFirebaseToS3(url, elapsed);
-            resolve(details.Location);
+            resolve(url);
         }).catch(reject)
     }
 
@@ -639,24 +639,35 @@ let themes = {
 // TODO - make this a property of print size
 let vectorScaleScale = 0.65;
 
+const generatePrint = (data) => {
+    return new Promise((resolve, reject) => {
+        console.info('generating print...');
+        console.info(data);
+        if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
+            console.error('parameter missing', data);
+            reject('malformed queue item');
+        } else {
+            let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
+            map.complete.then((url) => {
+                console.info('done!');
+                resolve(url);
+            })
+            .catch((err) => {
+                console.error('image generation request failed');
+                dumpError(err);
+                reject(err);
+            })
+        }
+    });
+};
+
 let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject) => {
     console.info('imageGeneration queue running for user: ', data.uid);
-    console.info(data);
-    if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
-        console.error('parameter missing', data);
-        reject('malformed queue item');
-    } else {
-        let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
-        map.complete.then(() => {
-            console.info('done!');
-            resolve();
-        })
-        .catch((err) => {
-            console.error('image generation request failed')
-            dumpError(err);
-            reject(err);
-        })
-    }
+    generatePrint(data)
+        .then(resolve)
+        .catch(reject)
 });
 
 console.info('imageGeneration queue up and running');
+
+export default generatePrint;

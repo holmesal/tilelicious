@@ -3,6 +3,10 @@
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 //import latLngToTileXY from './tileUtils';
 
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
 var _canvas = require('canvas');
 
 var _canvas2 = _interopRequireDefault(_canvas);
@@ -210,9 +214,9 @@ var StravaMap = (function () {
             console.info('done fetching images!');
             _this.renderActivities().then(function () {
                 console.info('done drawing vectors!');
-                _this.renderToFile().then(function () {
+                _this.renderToFile().then(function (url) {
                     _this.cleanup();
-                    _this.resolve();
+                    _this.resolve(url);
                 }).catch(function (err) {
                     (0, _errors2.default)(err);_this.reject(err);
                 });
@@ -407,7 +411,7 @@ var StravaMap = (function () {
                 var url = details.Location;
                 (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* _"' + _this3.text + '"_ generated in *' + elapsed + 's*!\n' + url);
                 _this3.pointFirebaseToS3(url, elapsed);
-                resolve(details.Location);
+                resolve(url);
             }).catch(reject);
         }
     }, {
@@ -752,23 +756,32 @@ var themes = {
 // TODO - make this a property of print size
 var vectorScaleScale = 0.65;
 
+var generatePrint = function generatePrint(data) {
+    return new Promise(function (resolve, reject) {
+        console.info('generating print...');
+        console.info(data);
+        if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
+            console.error('parameter missing', data);
+            reject('malformed queue item');
+        } else {
+            var map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
+            map.complete.then(function (url) {
+                console.info('done!');
+                resolve(url);
+            }).catch(function (err) {
+                console.error('image generation request failed');
+                (0, _errors2.default)(err);
+                reject(err);
+            });
+        }
+    });
+};
+
 var queue = new _firebaseQueue2.default(_fb.imageGenerationQueueRef, function (data, progress, resolve, reject) {
     console.info('imageGeneration queue running for user: ', data.uid);
-    console.info(data);
-    if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
-        console.error('parameter missing', data);
-        reject('malformed queue item');
-    } else {
-        var map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
-        map.complete.then(function () {
-            console.info('done!');
-            resolve();
-        }).catch(function (err) {
-            console.error('image generation request failed');
-            (0, _errors2.default)(err);
-            reject(err);
-        });
-    }
+    generatePrint(data).then(resolve).catch(reject);
 });
 
 console.info('imageGeneration queue up and running');
+
+exports.default = generatePrint;
