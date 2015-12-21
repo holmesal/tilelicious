@@ -25,8 +25,8 @@ app.use('/printful-proxy', (0, _expressHttpProxy2.default)(_printful.ENDPOINT, {
     },
 
     intercept: function intercept(rsp, data, req, res, callback) {
-        res.headers['Access-Control-Allow-Origin'] = '*';
-        callback(data);
+        res.set('Access-Control-Allow-Origin', '*');
+        callback(null, data);
     },
 
     decorateRequest: function decorateRequest(req, res) {

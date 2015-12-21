@@ -12,8 +12,8 @@ app.use('/printful-proxy', proxy(ENDPOINT, {
     forwardPath: (req, res) => url.parse(req.url).path,
 
     intercept: (rsp, data, req, res, callback) => {
-        res.headers['Access-Control-Allow-Origin'] = `*`;
-        callback(data);
+        res.set('Access-Control-Allow-Origin', `*`);
+        callback(null, data);
     },
 
     decorateRequest: (req, res) => {
