@@ -1,3 +1,4 @@
+require('newrelic');
 process.env.PWD = process.cwd();
 require('dotenv').load();
 
