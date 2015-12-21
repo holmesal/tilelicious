@@ -1,38 +1,50 @@
 'use strict';
 
-var _http = require('http');
+var _printful = require('./utils/printful');
 
-var _http2 = _interopRequireDefault(_http);
+var _expressHttpProxy = require('express-http-proxy');
 
-var _httpProxy = require('http-proxy');
+var _expressHttpProxy2 = _interopRequireDefault(_expressHttpProxy);
 
-var _httpProxy2 = _interopRequireDefault(_httpProxy);
+var _express = require('express');
+
+var _express2 = _interopRequireDefault(_express);
+
+var _url = require('url');
+
+var _url2 = _interopRequireDefault(_url);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var API_KEY = new Buffer('0gkrd0lh-sijv-7xjo:y2al-e81r2lfuzmh6').toString('base64');
-var PRINTFUL_API = 'http://api.theprintful.com';
-console.info(API_KEY);
+var app = (0, _express2.default)();
 
-var proxy = _httpProxy2.default.createProxyServer({
-    //auth: `Basic ${API_KEY}`
+app.use('/printful-proxy', (0, _expressHttpProxy2.default)(_printful.ENDPOINT, {
+
+    forwardPath: function forwardPath(req, res) {
+        return _url2.default.parse(req.url).path;
+    },
+
+    decorateRequest: function decorateRequest(req, res) {
+        req.headers['Authorization'] = 'Basic ' + _printful.API_KEY;
+        return req;
+    }
+
+}));
+
+app.get('/', function (req, res) {
+    return res.send('hiiiii');
 });
 
-proxy.on('proxyReq', function (proxyReq, req, res, options) {
-    proxyReq.setHeader('Authorization', 'Basic ' + API_KEY);
-    //proxyReq.setHeader('Content-Type', null)
-    console.info(req.headers);
-    console.info(req.body);
-});
-
-proxy.on('proxyRes', function (proxyRes, req, res) {
-    console.info(res.headers);
-    proxyRes.headers['Access-Control-Allow-Origin'] = '*';
-});
-
-_http2.default.createServer(function (req, res) {
-    //res.end('ello ello!');
-    proxy.web(req, res, {
-        target: PRINTFUL_API
+app.get('/printful-hooks', function (req, res) {
+    (0, _printful.handleWebhook)(req.body).then(function () {
+        return res.end('ok');
+    }).catch(function (err) {
+        return res.status(500).send('oh shit.');
     });
-}).listen(process.env.PORT || 5000);
+});
+
+var port = process.env.PORT || 5000;
+
+var server = app.listen(port, function () {
+    return console.info('server running at http://' + server.address().address + ':' + server.address().port);
+});

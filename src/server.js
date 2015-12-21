@@ -1,29 +1,32 @@
-import http from 'http';
-import httpProxy from 'http-proxy';
+import {API_KEY, ENDPOINT} from './utils/printful';
 
-let API_KEY = new Buffer('0gkrd0lh-sijv-7xjo:y2al-e81r2lfuzmh6').toString('base64');
-let PRINTFUL_API = 'http://api.theprintful.com';
-console.info(API_KEY);
+import proxy from 'express-http-proxy';
+import express from 'express';
+import url from 'url';
+import {handleWebhook} from './utils/printful';
 
-let proxy = httpProxy.createProxyServer({
-    //auth: `Basic ${API_KEY}`
+let app = express();
+
+app.use('/printful-proxy', proxy(ENDPOINT, {
+
+    forwardPath: (req, res) => url.parse(req.url).path,
+
+    decorateRequest: (req, res) => {
+        req.headers['Authorization'] = `Basic ${API_KEY}`;
+        return req;
+    }
+
+}));
+
+app.get('/', (req, res) => res.send('hiiiii'));
+
+app.get('/printful-hooks', (req, res) => {
+    handleWebhook(req.body)
+        .then(() => res.end('ok'))
+        .catch((err) => res.status(500).send('oh shit.'))
 });
 
-proxy.on('proxyReq', (proxyReq, req, res, options) => {
-    proxyReq.setHeader('Authorization', `Basic ${API_KEY}`);
-    //proxyReq.setHeader('Content-Type', null)
-    console.info(req.headers)
-    console.info(req.body)
-});
 
-proxy.on('proxyRes', (proxyRes, req, res) => {
-    console.info(res.headers)
-    proxyRes.headers['Access-Control-Allow-Origin'] = `*`;
-});
+let port = process.env.PORT || 5000;
 
-http.createServer((req, res) => {
-    //res.end('ello ello!');
-    proxy.web(req, res, {
-        target: PRINTFUL_API
-    })
-}).listen(process.env.PORT || 5000);
+let server = app.listen(port, () => console.info(`server running at http://${server.address().address}:${server.address().port}`));

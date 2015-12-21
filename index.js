@@ -1,5 +1,5 @@
 process.env.PWD = process.cwd();
-console.info(process.env.PWD);
+require('dotenv').load();
 
 require('./dist/queues/ImageGenerationQueue');
 require('./dist/queues/tokenExchange');

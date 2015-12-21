@@ -55,4 +55,5 @@ var ordersRef = exports.ordersRef = rootRef.child('orders');
 var rejectedChargesRef = exports.rejectedChargesRef = rootRef.child('rejectedCharges');
 
 // uncomment to DESTROY
-//rootRef.set(null);
+//rootRef.child('activityByUser').set(null);
+//rootRef.child('activityStreamsRef').set(null);

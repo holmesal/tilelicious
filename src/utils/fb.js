@@ -37,4 +37,5 @@ export const ordersRef = rootRef.child(`orders`);
 export const rejectedChargesRef = rootRef.child(`rejectedCharges`);
 
 // uncomment to DESTROY
-//rootRef.set(null);
+//rootRef.child('activityByUser').set(null);
+//rootRef.child('activityStreamsRef').set(null);
