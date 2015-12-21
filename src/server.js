@@ -11,6 +11,11 @@ app.use('/printful-proxy', proxy(ENDPOINT, {
 
     forwardPath: (req, res) => url.parse(req.url).path,
 
+    intercept: (rsp, data, req, res, callback) => {
+        res.headers['Access-Control-Allow-Origin'] = `*`;
+        callback(data);
+    },
+
     decorateRequest: (req, res) => {
         req.headers['Authorization'] = `Basic ${API_KEY}`;
         return req;
@@ -20,7 +25,7 @@ app.use('/printful-proxy', proxy(ENDPOINT, {
 
 app.get('/', (req, res) => res.send('hiiiii'));
 
-app.get('/printful-hooks', (req, res) => {
+app.post('/printful-hooks', (req, res) => {
     handleWebhook(req.body)
         .then(() => res.end('ok'))
         .catch((err) => res.status(500).send('oh shit.'))

@@ -24,6 +24,11 @@ app.use('/printful-proxy', (0, _expressHttpProxy2.default)(_printful.ENDPOINT, {
         return _url2.default.parse(req.url).path;
     },
 
+    intercept: function intercept(rsp, data, req, res, callback) {
+        res.headers['Access-Control-Allow-Origin'] = '*';
+        callback(data);
+    },
+
     decorateRequest: function decorateRequest(req, res) {
         req.headers['Authorization'] = 'Basic ' + _printful.API_KEY;
         return req;
@@ -35,7 +40,7 @@ app.get('/', function (req, res) {
     return res.send('hiiiii');
 });
 
-app.get('/printful-hooks', function (req, res) {
+app.post('/printful-hooks', function (req, res) {
     (0, _printful.handleWebhook)(req.body).then(function () {
         return res.end('ok');
     }).catch(function (err) {
