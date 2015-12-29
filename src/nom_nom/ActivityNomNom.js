@@ -58,6 +58,7 @@ class ActivityNomNom {
                     }
                 } else {
                     console.info(`user ${this.uid} had no activities`);
+                    this.resolve();
                 }
             }
         });

@@ -13,6 +13,10 @@ var _s3UploadStream = require('s3-upload-stream');
 
 var _s3UploadStream2 = _interopRequireDefault(_s3UploadStream);
 
+var _lodash = require('lodash');
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var BUCKET_NAME = 'stravalicious';
@@ -20,13 +24,14 @@ var BUCKET_NAME = 'stravalicious';
 // New S3
 var s3Stream = (0, _s3UploadStream2.default)(new _awsSdk2.default.S3());
 
-function streamToS3(stream, key) {
+function streamToS3(stream, key, metadata) {
 
     return new Promise(function (resolve, reject) {
         var upload = s3Stream.upload({
             Bucket: BUCKET_NAME,
             Key: key,
-            ContentType: 'image/png'
+            ContentType: 'image/png',
+            Metadata: metadata
         });
 
         // Handle errors.

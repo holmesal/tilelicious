@@ -406,7 +406,12 @@ var StravaMap = (function () {
             var _this3 = this;
 
             console.info('streaming to amazon s3!');
-            (0, _s2.default)(stream, key).then(function (details) {
+            var keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'activities', 'paperSize', 'imageLocation', 'text'];
+            var metadata = {};
+            keys.forEach(function (key) {
+                return metadata[key] = JSON.stringify(_this3[key]);
+            });
+            (0, _s2.default)(stream, key, metadata).then(function (details) {
                 var elapsed = Math.round((Date.now() - _this3.startTime) / 100) / 10;
                 var url = details.Location;
                 (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* _"' + _this3.text + '"_ generated in *' + elapsed + 's*!\n' + url);

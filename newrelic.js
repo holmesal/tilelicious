@@ -8,11 +8,11 @@ exports.config = {
   /**
    * Array of application names.
    */
-  app_name: ['My Application'],
+  app_name: ['Victories backend'],
   /**
    * Your New Relic license key.
    */
-  license_key: 'license key here',
+  license_key: '5ad2c9ae17c350aa2867f9dc476c3e5e2a470c85',
   logging: {
     /**
      * Level at which to log. 'trace' is most useful to New Relic when diagnosing

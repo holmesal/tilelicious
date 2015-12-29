@@ -1,6 +1,7 @@
 
 import AWS from 'aws-sdk';
 import streamer from 's3-upload-stream';
+import _ from 'lodash';
 
 
 let BUCKET_NAME = 'stravalicious';
@@ -10,13 +11,14 @@ let s3Stream = streamer(new AWS.S3());
 
 
 
-export default function streamToS3(stream, key) {
+export default function streamToS3(stream, key, metadata) {
 
     return new Promise((resolve, reject) => {
         let upload = s3Stream.upload({
             Bucket: BUCKET_NAME,
             Key: key,
-            ContentType : 'image/png'
+            ContentType : 'image/png',
+            Metadata: metadata
         });
 
         // Handle errors.

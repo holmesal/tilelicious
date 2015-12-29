@@ -310,7 +310,10 @@ class StravaMap {
 
     streamToAmazonS3(stream, key, resolve, reject) {
         console.info('streaming to amazon s3!');
-        streamToS3(stream, key).then((details) => {
+        let keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'activities', 'paperSize', 'imageLocation', 'text'];
+        let metadata = {};
+        keys.forEach(key => metadata[key] = JSON.stringify(this[key]));
+        streamToS3(stream, key, metadata).then((details) => {
             let elapsed = Math.round((Date.now() - this.startTime) / 100)/10;
             let url = details.Location;
             slack(`:frame_with_picture: new *${this.paperSize}* _"${this.text}"_ generated in *${elapsed}s*!\n${url}`);

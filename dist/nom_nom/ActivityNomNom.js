@@ -86,6 +86,7 @@ var ActivityNomNom = (function () {
                         }
                     } else {
                         console.info('user ' + _this2.uid + ' had no activities');
+                        _this2.resolve();
                     }
                 }
             });
