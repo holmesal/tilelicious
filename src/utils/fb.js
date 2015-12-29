@@ -20,6 +20,8 @@ export const imageGenerationQueueRef = queueRootRef.child('imageGeneration');
 
 export const orderQueueRef = queueRootRef.child('order');
 
+export const serviceRequestQueueRef = queueRootRef.child('serviceRequest');
+
 
 /**
  * Firebase locations
@@ -35,6 +37,8 @@ export const activityStreamRef = (activityId) => rootRef.child(`streamByActivity
 export const ordersRef = rootRef.child(`orders`);
 
 export const rejectedChargesRef = rootRef.child(`rejectedCharges`);
+
+export const serviceRequestsRef = rootRef.child(`serviceRequests`);
 
 // uncomment to DESTROY
 //rootRef.child('activityByUser').set(null);
