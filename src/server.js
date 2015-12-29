@@ -9,6 +9,18 @@ let app = express();
 
 app.use('/printful-proxy', proxy(ENDPOINT, {
 
+    filter: (req, res) => {
+        let path = url.parse(req.url).path;
+        //console.info(path);
+        if (path === '/' ||
+            path === '/tax/rates' ||
+            path === '/shipping/rates') {
+            return true
+        } else {
+            return false
+        }
+    },
+
     forwardPath: (req, res) => url.parse(req.url).path,
 
     intercept: (rsp, data, req, res, callback) => {

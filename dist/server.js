@@ -20,6 +20,16 @@ var app = (0, _express2.default)();
 
 app.use('/printful-proxy', (0, _expressHttpProxy2.default)(_printful.ENDPOINT, {
 
+    filter: function filter(req, res) {
+        var path = _url2.default.parse(req.url).path;
+        //console.info(path);
+        if (path === '/' || path === '/tax/rates' || path === '/shipping/rates') {
+            return true;
+        } else {
+            return false;
+        }
+    },
+
     forwardPath: function forwardPath(req, res) {
         return _url2.default.parse(req.url).path;
     },
