@@ -13,6 +13,10 @@ var _slack = require('./slack');
 
 var _slack2 = _interopRequireDefault(_slack);
 
+var _log = require('../log');
+
+var _log2 = _interopRequireDefault(_log);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var API_KEY = exports.API_KEY = new Buffer(process.env.PRINTFUL_API_KEY).toString('base64');
@@ -61,10 +65,10 @@ var createOrder = exports.createOrder = function createOrder(order) {
     return new Promise(function (resolve, reject) {
         _superagent2.default.post(ENDPOINT + '/orders').send(order).set('Authorization', 'Basic ' + API_KEY).end(function (err, res) {
             if (err) {
-                console.info(err);
+                _log2.default.info(err);
                 reject(err);
             } else {
-                console.info(res.body);
+                _log2.default.info(res.body);
                 resolve(res.body.result);
             }
         });
@@ -73,7 +77,7 @@ var createOrder = exports.createOrder = function createOrder(order) {
 
 var handleWebhook = exports.handleWebhook = function handleWebhook(body) {
     return new Promise(function (resolve, reject) {
-        console.info('got webhook!', body);
+        _log2.default.info('got webhook!', body);
         if (body.type === 'package_shipped') {
             (0, _slack2.default)(':package::truck::airplane_departure: package shipped via *' + body.shipment.carrier + '+' + body.shipment.service + '* from printful!\n\n                en route to *' + body.order.recipient.name + '* in *' + body.order.recipient.city + ', ' + body.order.recipient.state_name + ', ' + body.order.recipient.country_name + '*\n\n                track this package: ' + body.shipment.tracking_url);
         } else if (body.type === 'order_failed') {

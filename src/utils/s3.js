@@ -3,7 +3,7 @@ import AWS from 'aws-sdk';
 import streamer from 's3-upload-stream';
 import _ from 'lodash';
 
-
+import log from '../log';
 let BUCKET_NAME = 'stravalicious';
 
 // New S3
@@ -23,7 +23,7 @@ export default function streamToS3(stream, key, metadata) {
 
         // Handle errors.
         upload.on('error', function (error) {
-            console.log(error);
+            log.error(error);
             reject(error);
         });
 
@@ -34,7 +34,7 @@ export default function streamToS3(stream, key, metadata) {
          uploadedSize: 29671068 }
          */
         upload.on('part', function (details) {
-            console.log(details);
+            log.info('s3 upload progress', details);
         });
 
         /* Handle upload completion. Example details object:
@@ -44,7 +44,7 @@ export default function streamToS3(stream, key, metadata) {
          ETag: '"bf2acbedf84207d696c8da7dbb205b9f-5"' }
          */
         upload.on('uploaded', function (details) {
-            console.log(details);
+            log.info('s3 upload complete', details);
             resolve(details);
         });
 

@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import generatePrint from './ImageGenerationQueue';
 import {getItem, createOrder} from '../utils/printful';
 import say from '../utils/slack';
+import log from '../log';
 
 let specs = {
     chargeCard: 'CHARGE_CARD',
@@ -16,11 +17,11 @@ let STRIPE_TEST_KEY = process.env.STRIPE_TEST_KEY;
 
 let stripe = Stripe(STRIPE_TEST_KEY);
 
-console.info('order queue up and running!');
+log.info('order queue up and running!');
 
 let chargeCardQueue = new Queue(orderQueueRef, {specId: specs.chargeCard}, (data, progress, resolve, reject) => {
-    console.info('got new order item, id='+data.stripe.id);
-    console.info(JSON.stringify(data));
+    log.info('got new order item, id='+data.stripe.id);
+    log.info(JSON.stringify(data));
     // First off, store this order somewhere permanent
     let orderRef = ordersRef.child(data.stripe.id);
     orderRef.set(data);
@@ -33,12 +34,12 @@ let chargeCardQueue = new Queue(orderQueueRef, {specId: specs.chargeCard}, (data
         description: 'Charge for Victories print'
     }, (err, charge) => {
         if (err) {
-            console.error(err);
+            log.error(err);
             let rejectedChargeRef = rejectedChargesRef.child(data.stripe.id);
             rejectedChargeRef.set(err.raw);
             reject(err);
         } else {
-            console.info('charge succeeded...');
+            log.info('charge succeeded...');
             // The charge succeeded
             orderRef.update({
                 charge: charge
@@ -100,7 +101,7 @@ let createOrderQueue = new Queue(orderQueueRef, {specId: specs.createOrder}, (da
     createOrder(order)
         .then((createdOrder) => {
             data.createdOrder = createdOrder;
-            console.info('successfully created printful order');
+            log.info('successfully created printful order');
             let orderRef = ordersRef.child(data.stripe.id);
             orderRef.update(data);
             // Post to slack

@@ -38,7 +38,9 @@
     "stripe": "^4.1.0",
     "superagent": "^1.4.0",
     "superagent-retry": "holmesal/superagent-retry",
-    "togeojson": "^0.13.0"
+    "togeojson": "^0.13.0",
+    "winston": "^2.1.1",
+    "winston-logentries": "^1.0.1"
   },
   "devDependencies": {
     "babel-core": "^6.2.1"

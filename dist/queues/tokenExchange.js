@@ -10,19 +10,23 @@ var _stravaV = require('strava-v3');
 
 var _stravaV2 = _interopRequireDefault(_stravaV);
 
+var _log = require('../log');
+
+var _log2 = _interopRequireDefault(_log);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-console.info('token exchange queue up and running!');
+_log2.default.info('token exchange queue up and running!');
 
 var queue = new _firebaseQueue2.default(_fb.tokenExchangeQueueRef, function (data, progress, resolve, reject) {
     var code = data.code;
-    console.log('exchanging token for', code);
+    _log2.default.log('exchanging token for', code);
     _stravaV2.default.oauth.getToken(code, function (err, res) {
         if (err || res.errors) {
             reject(JSON.stringify(res));
-            console.error(err, res);
+            _log2.default.error(err, res);
         } else {
-            console.info('got athlete', res);
+            _log2.default.info('got athlete', res);
             var access_token = res.access_token;
             var athlete = res.athlete;
 

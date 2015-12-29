@@ -2,6 +2,7 @@ export const API_KEY = new Buffer(process.env.PRINTFUL_API_KEY).toString('base64
 export const ENDPOINT = 'http://api.theprintful.com';
 import request from 'superagent';
 import say from './slack';
+import log from '../log';
 
 export const items = {
     '12x16': {
@@ -50,10 +51,10 @@ export const createOrder = (order) => {
             .set('Authorization', `Basic ${API_KEY}`)
             .end((err, res) => {
                 if (err) {
-                    console.info(err);
+                    log.info(err);
                     reject(err);
                 } else {
-                    console.info(res.body);
+                    log.info(res.body);
                     resolve(res.body.result);
                 }
             })
@@ -62,7 +63,7 @@ export const createOrder = (order) => {
 
 export const handleWebhook = (body) => {
     return new Promise((resolve, reject) => {
-        console.info('got webhook!', body);
+        log.info('got webhook!', body);
         if (body.type === 'package_shipped') {
             say(`:package::truck::airplane_departure: package shipped via *${body.shipment.carrier}+${body.shipment.service}* from printful!\n
                 en route to *${body.order.recipient.name}* in *${body.order.recipient.city}, ${body.order.recipient.state_name}, ${body.order.recipient.country_name}*\n

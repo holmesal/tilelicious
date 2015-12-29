@@ -2,6 +2,10 @@
 
 var _printful = require('./utils/printful');
 
+var _log = require('./log');
+
+var _log2 = _interopRequireDefault(_log);
+
 var _expressHttpProxy = require('express-http-proxy');
 
 var _expressHttpProxy2 = _interopRequireDefault(_expressHttpProxy);
@@ -22,7 +26,7 @@ app.use('/printful-proxy', (0, _expressHttpProxy2.default)(_printful.ENDPOINT, {
 
     filter: function filter(req, res) {
         var path = _url2.default.parse(req.url).path;
-        //console.info(path);
+        //log.info(path);
         if (path === '/' || path === '/tax/rates' || path === '/shipping/rates') {
             return true;
         } else {
@@ -61,5 +65,5 @@ app.post('/printful-hooks', function (req, res) {
 var port = process.env.PORT || 5000;
 
 var server = app.listen(port, function () {
-    return console.info('server running at http://' + server.address().address + ':' + server.address().port);
+    return _log2.default.info('server running at http://' + server.address().address + ':' + server.address().port);
 });

@@ -24,11 +24,13 @@ var _geojson = require('geojson');
 
 var _geojson2 = _interopRequireDefault(_geojson);
 
+var _log = require('../log');
+
+var _log2 = _interopRequireDefault(_log);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var PER_PAGE = 200;
 
 var StreamNomNom = (function () {
     function StreamNomNom(uid, activityId, resolve, reject) {
@@ -42,9 +44,9 @@ var StreamNomNom = (function () {
         // Only fetch this stream if it doesn't exist in firebase
         (0, _fb.activityStreamRef)(activityId).child('hasData').once('value', function (snap) {
             if (snap.val()) {
-                console.info('not fetching stream, it is already loaded');
+                _log2.default.info('not fetching stream, it is already loaded');
             } else {
-                console.info('fetching stream: ', activityId);
+                _log2.default.info('fetching stream: ', activityId);
                 that.fetchStream();
             }
         });
@@ -61,19 +63,19 @@ var StreamNomNom = (function () {
                 resolution: 'medium'
             }, function (err, stream) {
                 if (err) {
-                    console.error(err);
+                    _log2.default.error(err);
                     _this.reject(err);
                 } else {
                     var latlng = _lodash2.default.findWhere(stream, { type: 'latlng' });
-                    //console.info(stream);
+                    //log.info(stream);
                     if (latlng) {
                         latlng.geojson = _this.convertStreamToGeoJSON(latlng.data);
                         delete latlng.data;
-                        console.info('done fetching stream ', _this.activityId);
+                        _log2.default.info('done fetching stream ', _this.activityId);
                         _this.pushStreamToFirebase(latlng);
                         _this.resolve();
                     } else {
-                        console.info('no data returned for this stream?');
+                        _log2.default.info('no data returned for this stream?');
                         _this.reject(err);
                     }
                 }
@@ -109,10 +111,10 @@ var StreamNomNom = (function () {
 //let test = new StreamNomNom('8657205', '330487627');
 
 exports.default = StreamNomNom;
-console.info('streamNomNom queue up and running');
+_log2.default.info('streamNomNom queue up and running');
 
 var queue = new _firebaseQueue2.default(_fb.streamNomNomQueueRef, function (data, progress, resolve, reject) {
-    console.info('streamNomNomQueue running for user: ', data.uid, ' and activity ', data.activityId);
+    _log2.default.info('streamNomNomQueue running for user: ', data.uid, ' and activity ', data.activityId);
     if (!data.uid || !data.activityId) {
         reject('something was undefined: activityId: ' + data.activityId + '   uid: ' + data.uid);
     } else {

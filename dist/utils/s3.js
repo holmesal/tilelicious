@@ -17,6 +17,10 @@ var _lodash = require('lodash');
 
 var _lodash2 = _interopRequireDefault(_lodash);
 
+var _log = require('../log');
+
+var _log2 = _interopRequireDefault(_log);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var BUCKET_NAME = 'stravalicious';
@@ -36,7 +40,7 @@ function streamToS3(stream, key, metadata) {
 
         // Handle errors.
         upload.on('error', function (error) {
-            console.log(error);
+            _log2.default.error(error);
             reject(error);
         });
 
@@ -47,7 +51,7 @@ function streamToS3(stream, key, metadata) {
          uploadedSize: 29671068 }
          */
         upload.on('part', function (details) {
-            console.log(details);
+            _log2.default.info('s3 upload progress', details);
         });
 
         /* Handle upload completion. Example details object:
@@ -57,7 +61,7 @@ function streamToS3(stream, key, metadata) {
          ETag: '"bf2acbedf84207d696c8da7dbb205b9f-5"' }
          */
         upload.on('uploaded', function (details) {
-            console.log(details);
+            _log2.default.info('s3 upload complete', details);
             resolve(details);
         });
 

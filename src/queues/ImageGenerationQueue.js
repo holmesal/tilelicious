@@ -20,6 +20,7 @@ import streamToS3 from '../utils/s3';
 import slack from '../utils/slack';
 import renderText from '../utils/renderText';
 import dumpError from '../utils/errors';
+import log from '../log';
 
 // Shim with custom text rendering function
 Context2d.prototype.renderText = renderText;
@@ -42,8 +43,8 @@ let limiter = new RateLimiter(1, 20);
 
 // Load the font
 let fontPath = '/assets/Victorious-LeagueGothic-Regular.otf';
-console.info(fontPath);
-console.info(process.env.PWD + fontPath);
+log.info(fontPath);
+log.info(process.env.PWD + fontPath);
 let leagueGothic = new Font('LeagueGothicRegular', process.env.PWD + fontPath);
 
 // Constants
@@ -81,7 +82,7 @@ class StravaMap {
         this.pixelsPrint = getDims(paperSize);
         // Calc some useful dimensions
         this.calcPixels();
-        console.info(paperSize, this.pixelsPrint);
+        log.info(paperSize, this.pixelsPrint);
 
         // How much bigger is the paper than the screen?
         let widthScaleFactor = this.pixelsPrint.mapWidth / pixelsScreen.w;
@@ -121,14 +122,14 @@ class StravaMap {
         this.vectorScaleFactor = widthScaleFactor;
 
         if (debug) {
-            console.log('.....pixelsScreen.....\n', pixelsScreen);
-            console.log('.....pixelsPrint.....\n', this.pixelsPrint);
-            console.log('.....widthScaleFactor.....\n', widthScaleFactor);
-            console.log('.....zSteps (additional zoom).....\n', zSteps);
-            console.log('.....tileZ (request tiles at this zoom).....\n', this.tileZ);
-            console.log('.....fractionalResidualScale (correct tiles for this).....\n', fractionalResidualScale);
-            console.log('.....tileScaleFactor.....\n', this.tileScaleFactor);
-            console.log('.....vectorScaleFactor.....\n', this.vectorScaleFactor);
+            log.info('.....pixelsScreen.....\n', pixelsScreen);
+            log.info('.....pixelsPrint.....\n', this.pixelsPrint);
+            log.info('.....widthScaleFactor.....\n', widthScaleFactor);
+            log.info('.....zSteps (additional zoom).....\n', zSteps);
+            log.info('.....tileZ (request tiles at this zoom).....\n', this.tileZ);
+            log.info('.....fractionalResidualScale (correct tiles for this).....\n', fractionalResidualScale);
+            log.info('.....tileScaleFactor.....\n', this.tileScaleFactor);
+            log.info('.....vectorScaleFactor.....\n', this.vectorScaleFactor);
         }
 
         // Init the canvas
@@ -140,9 +141,9 @@ class StravaMap {
 
         // Fetch ze images!
         this.fetchMapboxImages().then(() => {
-            console.info('done fetching images!');
+            log.info('done fetching images!');
             this.renderActivities().then(() => {
-                console.info('done drawing vectors!');
+                log.info('done drawing vectors!');
                 this.renderToFile().then((url) => {
                     this.cleanup();
                     this.resolve(url);
@@ -153,10 +154,10 @@ class StravaMap {
 
 
         //this.renderActivities().then(() => {
-        //    console.info('done drawing vectors!');
-        //    console.info('rendering to file!');
+        //    log.info('done drawing vectors!');
+        //    log.info('rendering to file!');
         //    this.renderToFile();
-        //}).catch((err) => {console.error(err)});
+        //}).catch((err) => {log.error(err)});
 
     }
 
@@ -196,11 +197,11 @@ class StravaMap {
         //this.offset = [0, 0]
 
         if (debug) {
-            console.log('.....bbox.....\n', this.bbox);
-            console.log('.....xyzBounds.....\n', this.xyzBounds);
-            console.log('.....tileBbox.....\n', tileBbox);
-            console.log('.....pixels.....\n', bboxPx, tilePx);
-            console.log('.....offset.....\n', this.offset);
+            log.info('.....bbox.....\n', this.bbox);
+            log.info('.....xyzBounds.....\n', this.xyzBounds);
+            log.info('.....tileBbox.....\n', tileBbox);
+            log.info('.....pixels.....\n', bboxPx, tilePx);
+            log.info('.....offset.....\n', this.offset);
         }
     }
 
@@ -240,7 +241,7 @@ class StravaMap {
             // Encode the mapnik map as a png
             // Encode as a png
             this.im.encode('png', (err, buffer) => {
-                //console.info('vector buffer', buffer);
+                //log.info('vector buffer', buffer);
                 if (err) {reject(err); return}
                 let img = new Image;
                 img.src = buffer;
@@ -267,7 +268,7 @@ class StravaMap {
     }
 
     drawVectorsToCanvas(img) {
-        console.info('drawing map starting at ', this.locations.mapUpperLeft.x, img.width, img.height);
+        log.info('drawing map starting at ', this.locations.mapUpperLeft.x, img.width, img.height);
         this.ctx.drawImage(img, this.locations.mapUpperLeft.x, this.locations.mapUpperLeft.y, this.pixelsPrint.mapWidth, this.pixelsPrint.mapHeight);
     }
 
@@ -285,7 +286,7 @@ class StravaMap {
         this.ctx.font = `${fontSize}px LeagueGothicRegular`;
         let textWidth = Math.floor(this.ctx.measureText(text).width);
         let textX = this.locations.mapUpperLeft.x + (mapWidth) / 2;
-        console.info('text width is', textWidth, 'and is at x', textX);
+        log.info('text width is', textWidth, 'and is at x', textX);
 
         // Draw a red rectangle for now
         this.ctx.fillStyle = this.textColor;
@@ -296,20 +297,20 @@ class StravaMap {
     }
 
     streamToLocalFS(stream, key, resolve, reject) {
-        console.info('rendering to local filesystem!');
+        log.info('rendering to local filesystem!');
         let out = fs.createWriteStream(__dirname + 'renders/' + key);
         stream.on('data', function(chunk){
             out.write(chunk);
         });
 
         stream.on('end', () => {
-            console.log('saved png');
+            log.info('saved png');
             resolve();
         });
     }
 
     streamToAmazonS3(stream, key, resolve, reject) {
-        console.info('streaming to amazon s3!');
+        log.info('streaming to amazon s3!');
         let keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'activities', 'paperSize', 'imageLocation', 'text'];
         let metadata = {};
         keys.forEach(key => metadata[key] = JSON.stringify(this[key]));
@@ -330,7 +331,7 @@ class StravaMap {
                 generationTime: time
             })
         } else {
-            console.info('no complete firebase location provided');
+            log.info('no complete firebase location provided');
         }
     }
 
@@ -345,12 +346,12 @@ class StravaMap {
             let count = (tileBounds.maxX - tileBounds.minX + 1) * (tileBounds.maxY - tileBounds.minY + 1);
             let ic = 0;
             let promises = [];
-            console.info('fetching ' + count);
+            log.info('fetching ' + count);
             for (let x=tileBounds.minX; x <= tileBounds.maxX;x++){
                 for (let y=tileBounds.minY; y <= tileBounds.maxY;y++){
                     let relX = x - tileBounds.minX;
                     let relY = y - tileBounds.minY;
-                    //if (debug) console.info(`fetching ${x}, ${y}`);
+                    //if (debug) log.info(`fetching ${x}, ${y}`);
 
                     //let tile = new ImageFetcher(x, y, z, relX, relY, ic, count);
                     // Return a promise for all operations on this tile
@@ -363,7 +364,7 @@ class StravaMap {
 
                             // Log
                             this.renderCount++;
-                            console.log(`tile [${this.renderCount}/${count}] ... drawing ${relX}, ${relY} @ ${pX} [+ ${this.offset[0]}], ${pY} [+${this.offset[1]}]`);
+                            log.info(`tile [${this.renderCount}/${count}] ... drawing ${relX}, ${relY} @ ${pX} [+ ${this.offset[0]}], ${pY} [+${this.offset[1]}]`);
 
                             // Adjust by corner offset and render
                             this.renderTile(tileBuffer, pX - this.offset[0], pY - this.offset[1]);
@@ -371,7 +372,7 @@ class StravaMap {
                             // Done with all tile operations
                             resolveTile();
                         }).catch((err) => {
-                            console.error('error fetching tile', err); dumpError(err); reject(err);
+                            log.error('error fetching tile', err); dumpError(err); reject(err);
                         });
 
                     });
@@ -392,7 +393,7 @@ class StravaMap {
         return new Promise((resolve, reject) => {
             // Build the URL
             let url = `https://api.mapbox.com/v4/${this.mapCreds.mapId}/${z}/${x}/${y}.png?access_token=${this.mapCreds.accessToken}`;
-            //if (debug) console.info(url);
+            //if (debug) log.info(url);
 
             // Make the request
             // rate-limited
@@ -454,7 +455,7 @@ class StravaMap {
             });
             //for (let i=1; i<=14; i++) {
             //    let geojson = require(`../data/geojson/${i}.json`);
-            //    console.info('rendering geojson ' + i);
+            //    log.info('rendering geojson ' + i);
             //    promises.push(this.renderGeoJSONVector(geojson));
             //}
 
@@ -468,12 +469,12 @@ class StravaMap {
 
     renderActivity(activityId) {
         return new Promise((resolve, reject) => {
-            console.info(`--- rendering activity ${activityId}`);
+            log.info(`--- rendering activity ${activityId}`);
             activityStreamRef(activityId).once('value', (snap) => {
                 let activity = snap.val();
                 if (activity) {
-                    console.info(`--- fetched data for activity ${activityId}`);
-                    //console.info(activity.geojson);
+                    log.info(`--- fetched data for activity ${activityId}`);
+                    //log.info(activity.geojson);
                     this.renderGeoJSONVector(activity.geojson, activityId)
                         .then(() => {
                             resolve();
@@ -493,7 +494,7 @@ class StravaMap {
                 strokeWidth = strokeWidth * this.vectorScaleFactor * this.vectorScaleScale;
             }
             // Update the loaded geojson with styles
-            //console.info(geojson.features[0])
+            //log.info(geojson.features[0])
             geojson.features[0].properties = {
                 stroke: this.vectorStyle.stroke,
                 'stroke-width': strokeWidth,
@@ -503,7 +504,7 @@ class StravaMap {
                 'stroke-linejoin': 'round'
             };
 
-            //console.info(geojson.features[0]);
+            //log.info(geojson.features[0]);
 
             // Ensure context opacity is at 1
             this.ctx.globalAlpha = 1;
@@ -511,7 +512,7 @@ class StravaMap {
 
             // Convert to mapnik xml format
             let xml = mapnikify(geojson, false, (err, xml) => {
-                //console.log(xml);
+                //log.info(xml);
                 this.pool.acquire((err, map) => {
                     if (err) dumpError(err);
                     map.fromString(xml, {}, (err, map) => {
@@ -526,7 +527,7 @@ class StravaMap {
                         // Render this map to an image buffer
                         map.render(this.im, (err, im) => {
                             if (err) {reject(err); return}
-                            console.info(`--- done rendering activity ${activityId}`)
+                            log.info(`--- done rendering activity ${activityId}`)
                             // Release this map so other threads can draw on it
                             this.pool.release(map);
                             // We're done here.
@@ -540,10 +541,10 @@ class StravaMap {
     }
 
     cleanup() {
-        console.log(util.inspect(process.memoryUsage()));
-        console.info('cleaning up...')
+        log.info(util.inspect(process.memoryUsage()));
+        log.info('cleaning up...')
         this.pool.destroy();
-        console.log(util.inspect(process.memoryUsage()));
+        log.info(util.inspect(process.memoryUsage()));
     }
 }
 
@@ -600,7 +601,7 @@ let themes = {
 
 //let map = new StravaMap(pixelsScreen, zScreen, bboxScreen, paperSize, mapCreds.dark, vectorStyle.dark, vectorScaleScale)
 //map.complete.then(() => {
-//    console.info('promise ran!')
+//    log.info('promise ran!')
 //});
 
 //let set = [
@@ -624,7 +625,7 @@ let themes = {
 //    let path = '/export/';
 //    let vectorScaleScale = option.vectorScaleScale || false;
 //    let filename = `${path}${option.size}_vectorScale=${vectorScaleScale}_${option.theme}.png`;
-//    console.info(`\n\n\nstarting ${filename}\n\n`);
+//    log.info(`\n\n\nstarting ${filename}\n\n`);
 //
 //    let backgroundColor = option.theme === 'dark' ? '#202020' : '#FFFFFF'
 //
@@ -644,19 +645,19 @@ let vectorScaleScale = 0.65;
 
 const generatePrint = (data) => {
     return new Promise((resolve, reject) => {
-        console.info('generating print...');
-        console.info(data);
+        log.info('generating print...');
+        log.info(data);
         if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
-            console.error('parameter missing', data);
+            log.error('parameter missing', data);
             reject('malformed queue item');
         } else {
             let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
             map.complete.then((url) => {
-                console.info('done!');
+                log.info('done!');
                 resolve(url);
             })
             .catch((err) => {
-                console.error('image generation request failed');
+                log.error('image generation request failed');
                 dumpError(err);
                 reject(err);
             })
@@ -665,12 +666,12 @@ const generatePrint = (data) => {
 };
 
 let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject) => {
-    console.info('imageGeneration queue running for user: ', data.uid);
+    log.info('imageGeneration queue running for user: ', data.uid);
     generatePrint(data)
         .then(resolve)
         .catch(reject)
 });
 
-console.info('imageGeneration queue up and running');
+log.info('imageGeneration queue up and running');
 
 export default generatePrint;

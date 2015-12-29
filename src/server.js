@@ -1,5 +1,5 @@
 import {API_KEY, ENDPOINT} from './utils/printful';
-
+import log from './log';
 import proxy from 'express-http-proxy';
 import express from 'express';
 import url from 'url';
@@ -11,7 +11,7 @@ app.use('/printful-proxy', proxy(ENDPOINT, {
 
     filter: (req, res) => {
         let path = url.parse(req.url).path;
-        //console.info(path);
+        //log.info(path);
         if (path === '/' ||
             path === '/tax/rates' ||
             path === '/shipping/rates') {
@@ -46,4 +46,4 @@ app.post('/printful-hooks', (req, res) => {
 
 let port = process.env.PORT || 5000;
 
-let server = app.listen(port, () => console.info(`server running at http://${server.address().address}:${server.address().port}`));
+let server = app.listen(port, () => log.info(`server running at http://${server.address().address}:${server.address().port}`));

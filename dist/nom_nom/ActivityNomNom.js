@@ -20,6 +20,10 @@ var _firebaseQueue = require('firebase-queue');
 
 var _firebaseQueue2 = _interopRequireDefault(_firebaseQueue);
 
+var _log = require('../log');
+
+var _log2 = _interopRequireDefault(_log);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -39,10 +43,10 @@ var ActivityNomNom = (function () {
         this.userActivityRef = (0, _fb.userActivityRef)(uid);
 
         // Fetch the token to use with this request
-        console.info('fetching token for ', this.uid);
+        _log2.default.info('fetching token for ', this.uid);
         (0, _fb.userRef)(this.uid).child('access_token').once('value', function (snap) {
             var token = snap.val();
-            console.info('got token, ', token);
+            _log2.default.info('got token, ', token);
             if (!token) {
                 reject('could not find this user token, got: ' + token);
             } else {
@@ -60,7 +64,7 @@ var ActivityNomNom = (function () {
 
             var page = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
 
-            console.info('fetching activities page ' + page + ' for athlete ' + this.uid);
+            _log2.default.info('fetching activities page ' + page + ' for athlete ' + this.uid);
             _stravaV2.default.athlete.listActivities({
                 per_page: PER_PAGE,
                 page: page,
@@ -69,23 +73,23 @@ var ActivityNomNom = (function () {
             }, function (err, res) {
                 if (err || res.errors) {
                     _this2.reject(JSON.stringify(res));
-                    console.error(err, res);
+                    _log2.default.error(err, res);
                 } else {
                     var activities = res;
                     if (activities.length > 0) {
-                        console.info('got ' + activities.length + ' activities, starting with id: ' + activities[0].id);
+                        _log2.default.info('got ' + activities.length + ' activities, starting with id: ' + activities[0].id);
                         // Save these activities to firebase
                         _this2.pushActivitiesToFirebase(activities);
                         if (activities.length === PER_PAGE) {
                             var nextPage = page + 1;
-                            console.info('page is ', page, ' next page is ', nextPage);
+                            _log2.default.info('page is ', page, ' next page is ', nextPage);
                             _this2.fetchActivities(page + 1);
                         } else {
-                            console.info('done fetching activities');
+                            _log2.default.info('done fetching activities');
                             _this2.resolve();
                         }
                     } else {
-                        console.info('user ' + _this2.uid + ' had no activities');
+                        _log2.default.info('user ' + _this2.uid + ' had no activities');
                         _this2.resolve();
                     }
                 }
@@ -109,9 +113,9 @@ var ActivityNomNom = (function () {
     return ActivityNomNom;
 })();
 
-console.info('activityNomNom queue up and running');
+_log2.default.info('activityNomNom queue up and running');
 
 var queue = new _firebaseQueue2.default(_fb.activityNomNomQueueRef, function (data, progress, resolve, reject) {
-    console.info('activityNomNomQueue running for user: ', data.uid);
+    _log2.default.info('activityNomNomQueue running for user: ', data.uid);
     var activity = new ActivityNomNom(data.uid, resolve, reject);
 });

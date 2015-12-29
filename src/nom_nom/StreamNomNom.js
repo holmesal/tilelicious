@@ -3,8 +3,8 @@ import _ from 'lodash';
 import {activityStreamRef, userActivityRef, streamNomNomQueueRef} from '../utils/fb';
 import Queue from 'firebase-queue';
 import geojson from 'geojson';
+import log from '../log';
 
-const PER_PAGE = 200;
 
 export default class StreamNomNom {
 
@@ -17,9 +17,9 @@ export default class StreamNomNom {
         // Only fetch this stream if it doesn't exist in firebase
         activityStreamRef(activityId).child('hasData').once('value', (snap) => {
             if (snap.val()) {
-                console.info('not fetching stream, it is already loaded')
+                log.info('not fetching stream, it is already loaded')
             } else {
-                console.info('fetching stream: ', activityId);
+                log.info('fetching stream: ', activityId);
                 that.fetchStream()
             }
         });
@@ -32,19 +32,19 @@ export default class StreamNomNom {
             resolution: 'medium'
         }, (err, stream) => {
             if (err) {
-                console.error(err);
+                log.error(err);
                 this.reject(err);
             } else {
                 let latlng = _.findWhere(stream, {type: 'latlng'});
-                //console.info(stream);
+                //log.info(stream);
                 if (latlng) {
                     latlng.geojson = this.convertStreamToGeoJSON(latlng.data);
                     delete latlng.data;
-                    console.info('done fetching stream ', this.activityId);
+                    log.info('done fetching stream ', this.activityId);
                     this.pushStreamToFirebase(latlng);
                     this.resolve();
                 } else {
-                    console.info('no data returned for this stream?');
+                    log.info('no data returned for this stream?');
                     this.reject(err);
                 }
             }
@@ -72,10 +72,10 @@ export default class StreamNomNom {
 
 //let test = new StreamNomNom('8657205', '330487627');
 
-console.info('streamNomNom queue up and running');
+log.info('streamNomNom queue up and running');
 
 let queue = new Queue(streamNomNomQueueRef, (data, progress, resolve, reject) => {
-    console.info('streamNomNomQueue running for user: ', data.uid, ' and activity ', data.activityId);
+    log.info('streamNomNomQueue running for user: ', data.uid, ' and activity ', data.activityId);
     if (!data.uid || !data.activityId) {
         reject(`something was undefined: activityId: ${data.activityId}   uid: ${data.uid}`);
     } else {

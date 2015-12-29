@@ -85,6 +85,10 @@ var _errors = require('../utils/errors');
 
 var _errors2 = _interopRequireDefault(_errors);
 
+var _log = require('../log');
+
+var _log2 = _interopRequireDefault(_log);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -110,8 +114,8 @@ var limiter = new _limiter.RateLimiter(1, 20);
 
 // Load the font
 var fontPath = '/assets/Victorious-LeagueGothic-Regular.otf';
-console.info(fontPath);
-console.info(process.env.PWD + fontPath);
+_log2.default.info(fontPath);
+_log2.default.info(process.env.PWD + fontPath);
 var leagueGothic = new _canvas.Font('LeagueGothicRegular', process.env.PWD + fontPath);
 
 // Constants
@@ -153,7 +157,7 @@ var StravaMap = (function () {
         this.pixelsPrint = (0, _sizes.getDims)(paperSize);
         // Calc some useful dimensions
         this.calcPixels();
-        console.info(paperSize, this.pixelsPrint);
+        _log2.default.info(paperSize, this.pixelsPrint);
 
         // How much bigger is the paper than the screen?
         var widthScaleFactor = this.pixelsPrint.mapWidth / pixelsScreen.w;
@@ -193,14 +197,14 @@ var StravaMap = (function () {
         this.vectorScaleFactor = widthScaleFactor;
 
         if (debug) {
-            console.log('.....pixelsScreen.....\n', pixelsScreen);
-            console.log('.....pixelsPrint.....\n', this.pixelsPrint);
-            console.log('.....widthScaleFactor.....\n', widthScaleFactor);
-            console.log('.....zSteps (additional zoom).....\n', zSteps);
-            console.log('.....tileZ (request tiles at this zoom).....\n', this.tileZ);
-            console.log('.....fractionalResidualScale (correct tiles for this).....\n', fractionalResidualScale);
-            console.log('.....tileScaleFactor.....\n', this.tileScaleFactor);
-            console.log('.....vectorScaleFactor.....\n', this.vectorScaleFactor);
+            _log2.default.info('.....pixelsScreen.....\n', pixelsScreen);
+            _log2.default.info('.....pixelsPrint.....\n', this.pixelsPrint);
+            _log2.default.info('.....widthScaleFactor.....\n', widthScaleFactor);
+            _log2.default.info('.....zSteps (additional zoom).....\n', zSteps);
+            _log2.default.info('.....tileZ (request tiles at this zoom).....\n', this.tileZ);
+            _log2.default.info('.....fractionalResidualScale (correct tiles for this).....\n', fractionalResidualScale);
+            _log2.default.info('.....tileScaleFactor.....\n', this.tileScaleFactor);
+            _log2.default.info('.....vectorScaleFactor.....\n', this.vectorScaleFactor);
         }
 
         // Init the canvas
@@ -211,9 +215,9 @@ var StravaMap = (function () {
 
         // Fetch ze images!
         this.fetchMapboxImages().then(function () {
-            console.info('done fetching images!');
+            _log2.default.info('done fetching images!');
             _this.renderActivities().then(function () {
-                console.info('done drawing vectors!');
+                _log2.default.info('done drawing vectors!');
                 _this.renderToFile().then(function (url) {
                     _this.cleanup();
                     _this.resolve(url);
@@ -228,10 +232,10 @@ var StravaMap = (function () {
         });
 
         //this.renderActivities().then(() => {
-        //    console.info('done drawing vectors!');
-        //    console.info('rendering to file!');
+        //    log.info('done drawing vectors!');
+        //    log.info('rendering to file!');
         //    this.renderToFile();
-        //}).catch((err) => {console.error(err)});
+        //}).catch((err) => {log.error(err)});
     }
 
     _createClass(StravaMap, [{
@@ -270,11 +274,11 @@ var StravaMap = (function () {
             //this.offset = [0, 0]
 
             if (debug) {
-                console.log('.....bbox.....\n', this.bbox);
-                console.log('.....xyzBounds.....\n', this.xyzBounds);
-                console.log('.....tileBbox.....\n', tileBbox);
-                console.log('.....pixels.....\n', bboxPx, tilePx);
-                console.log('.....offset.....\n', this.offset);
+                _log2.default.info('.....bbox.....\n', this.bbox);
+                _log2.default.info('.....xyzBounds.....\n', this.xyzBounds);
+                _log2.default.info('.....tileBbox.....\n', tileBbox);
+                _log2.default.info('.....pixels.....\n', bboxPx, tilePx);
+                _log2.default.info('.....offset.....\n', this.offset);
             }
         }
     }, {
@@ -320,7 +324,7 @@ var StravaMap = (function () {
                 // Encode the mapnik map as a png
                 // Encode as a png
                 _this2.im.encode('png', function (err, buffer) {
-                    //console.info('vector buffer', buffer);
+                    //log.info('vector buffer', buffer);
                     if (err) {
                         reject(err);return;
                     }
@@ -350,7 +354,7 @@ var StravaMap = (function () {
     }, {
         key: 'drawVectorsToCanvas',
         value: function drawVectorsToCanvas(img) {
-            console.info('drawing map starting at ', this.locations.mapUpperLeft.x, img.width, img.height);
+            _log2.default.info('drawing map starting at ', this.locations.mapUpperLeft.x, img.width, img.height);
             this.ctx.drawImage(img, this.locations.mapUpperLeft.x, this.locations.mapUpperLeft.y, this.pixelsPrint.mapWidth, this.pixelsPrint.mapHeight);
         }
     }, {
@@ -377,7 +381,7 @@ var StravaMap = (function () {
             this.ctx.font = fontSize + 'px LeagueGothicRegular';
             var textWidth = Math.floor(this.ctx.measureText(text).width);
             var textX = this.locations.mapUpperLeft.x + mapWidth / 2;
-            console.info('text width is', textWidth, 'and is at x', textX);
+            _log2.default.info('text width is', textWidth, 'and is at x', textX);
 
             // Draw a red rectangle for now
             this.ctx.fillStyle = this.textColor;
@@ -389,14 +393,14 @@ var StravaMap = (function () {
     }, {
         key: 'streamToLocalFS',
         value: function streamToLocalFS(stream, key, resolve, reject) {
-            console.info('rendering to local filesystem!');
+            _log2.default.info('rendering to local filesystem!');
             var out = _fs2.default.createWriteStream(__dirname + 'renders/' + key);
             stream.on('data', function (chunk) {
                 out.write(chunk);
             });
 
             stream.on('end', function () {
-                console.log('saved png');
+                _log2.default.info('saved png');
                 resolve();
             });
         }
@@ -405,7 +409,7 @@ var StravaMap = (function () {
         value: function streamToAmazonS3(stream, key, resolve, reject) {
             var _this3 = this;
 
-            console.info('streaming to amazon s3!');
+            _log2.default.info('streaming to amazon s3!');
             var keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'activities', 'paperSize', 'imageLocation', 'text'];
             var metadata = {};
             keys.forEach(function (key) {
@@ -429,7 +433,7 @@ var StravaMap = (function () {
                     generationTime: time
                 });
             } else {
-                console.info('no complete firebase location provided');
+                _log2.default.info('no complete firebase location provided');
             }
         }
     }, {
@@ -447,13 +451,13 @@ var StravaMap = (function () {
                 var count = (tileBounds.maxX - tileBounds.minX + 1) * (tileBounds.maxY - tileBounds.minY + 1);
                 var ic = 0;
                 var promises = [];
-                console.info('fetching ' + count);
+                _log2.default.info('fetching ' + count);
 
                 var _loop = function _loop(x) {
                     var _loop2 = function _loop2(y) {
                         var relX = x - tileBounds.minX;
                         var relY = y - tileBounds.minY;
-                        //if (debug) console.info(`fetching ${x}, ${y}`);
+                        //if (debug) log.info(`fetching ${x}, ${y}`);
 
                         //let tile = new ImageFetcher(x, y, z, relX, relY, ic, count);
                         // Return a promise for all operations on this tile
@@ -466,7 +470,7 @@ var StravaMap = (function () {
 
                                 // Log
                                 _this4.renderCount++;
-                                console.log('tile [' + _this4.renderCount + '/' + count + '] ... drawing ' + relX + ', ' + relY + ' @ ' + pX + ' [+ ' + _this4.offset[0] + '], ' + pY + ' [+' + _this4.offset[1] + ']');
+                                _log2.default.info('tile [' + _this4.renderCount + '/' + count + '] ... drawing ' + relX + ', ' + relY + ' @ ' + pX + ' [+ ' + _this4.offset[0] + '], ' + pY + ' [+' + _this4.offset[1] + ']');
 
                                 // Adjust by corner offset and render
                                 _this4.renderTile(tileBuffer, pX - _this4.offset[0], pY - _this4.offset[1]);
@@ -474,7 +478,7 @@ var StravaMap = (function () {
                                 // Done with all tile operations
                                 resolveTile();
                             }).catch(function (err) {
-                                console.error('error fetching tile', err);(0, _errors2.default)(err);reject(err);
+                                _log2.default.error('error fetching tile', err);(0, _errors2.default)(err);reject(err);
                             });
                         });
                         promises.push(tilePromise);
@@ -505,7 +509,7 @@ var StravaMap = (function () {
             return new Promise(function (resolve, reject) {
                 // Build the URL
                 var url = 'https://api.mapbox.com/v4/' + _this5.mapCreds.mapId + '/' + z + '/' + x + '/' + y + '.png?access_token=' + _this5.mapCreds.accessToken;
-                //if (debug) console.info(url);
+                //if (debug) log.info(url);
 
                 // Make the request
                 // rate-limited
@@ -569,7 +573,7 @@ var StravaMap = (function () {
                 });
                 //for (let i=1; i<=14; i++) {
                 //    let geojson = require(`../data/geojson/${i}.json`);
-                //    console.info('rendering geojson ' + i);
+                //    log.info('rendering geojson ' + i);
                 //    promises.push(this.renderGeoJSONVector(geojson));
                 //}
 
@@ -586,12 +590,12 @@ var StravaMap = (function () {
             var _this7 = this;
 
             return new Promise(function (resolve, reject) {
-                console.info('--- rendering activity ' + activityId);
+                _log2.default.info('--- rendering activity ' + activityId);
                 (0, _fb.activityStreamRef)(activityId).once('value', function (snap) {
                     var activity = snap.val();
                     if (activity) {
-                        console.info('--- fetched data for activity ' + activityId);
-                        //console.info(activity.geojson);
+                        _log2.default.info('--- fetched data for activity ' + activityId);
+                        //log.info(activity.geojson);
                         _this7.renderGeoJSONVector(activity.geojson, activityId).then(function () {
                             resolve();
                         }).catch(reject);
@@ -612,7 +616,7 @@ var StravaMap = (function () {
                     strokeWidth = strokeWidth * _this8.vectorScaleFactor * _this8.vectorScaleScale;
                 }
                 // Update the loaded geojson with styles
-                //console.info(geojson.features[0])
+                //log.info(geojson.features[0])
                 geojson.features[0].properties = {
                     stroke: _this8.vectorStyle.stroke,
                     'stroke-width': strokeWidth,
@@ -622,14 +626,14 @@ var StravaMap = (function () {
                     'stroke-linejoin': 'round'
                 };
 
-                //console.info(geojson.features[0]);
+                //log.info(geojson.features[0]);
 
                 // Ensure context opacity is at 1
                 _this8.ctx.globalAlpha = 1;
 
                 // Convert to mapnik xml format
                 var xml = (0, _geojsonMapnikify2.default)(geojson, false, function (err, xml) {
-                    //console.log(xml);
+                    //log.info(xml);
                     _this8.pool.acquire(function (err, map) {
                         if (err) (0, _errors2.default)(err);
                         map.fromString(xml, {}, function (err, map) {
@@ -646,7 +650,7 @@ var StravaMap = (function () {
                                 if (err) {
                                     reject(err);return;
                                 }
-                                console.info('--- done rendering activity ' + activityId);
+                                _log2.default.info('--- done rendering activity ' + activityId);
                                 // Release this map so other threads can draw on it
                                 _this8.pool.release(map);
                                 // We're done here.
@@ -660,10 +664,10 @@ var StravaMap = (function () {
     }, {
         key: 'cleanup',
         value: function cleanup() {
-            console.log(_util2.default.inspect(process.memoryUsage()));
-            console.info('cleaning up...');
+            _log2.default.info(_util2.default.inspect(process.memoryUsage()));
+            _log2.default.info('cleaning up...');
             this.pool.destroy();
-            console.log(_util2.default.inspect(process.memoryUsage()));
+            _log2.default.info(_util2.default.inspect(process.memoryUsage()));
         }
     }]);
 
@@ -719,7 +723,7 @@ var themes = {
 
 //let map = new StravaMap(pixelsScreen, zScreen, bboxScreen, paperSize, mapCreds.dark, vectorStyle.dark, vectorScaleScale)
 //map.complete.then(() => {
-//    console.info('promise ran!')
+//    log.info('promise ran!')
 //});
 
 //let set = [
@@ -743,7 +747,7 @@ var themes = {
 //    let path = '/export/';
 //    let vectorScaleScale = option.vectorScaleScale || false;
 //    let filename = `${path}${option.size}_vectorScale=${vectorScaleScale}_${option.theme}.png`;
-//    console.info(`\n\n\nstarting ${filename}\n\n`);
+//    log.info(`\n\n\nstarting ${filename}\n\n`);
 //
 //    let backgroundColor = option.theme === 'dark' ? '#202020' : '#FFFFFF'
 //
@@ -763,18 +767,18 @@ var vectorScaleScale = 0.65;
 
 var generatePrint = function generatePrint(data) {
     return new Promise(function (resolve, reject) {
-        console.info('generating print...');
-        console.info(data);
+        _log2.default.info('generating print...');
+        _log2.default.info(data);
         if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
-            console.error('parameter missing', data);
+            _log2.default.error('parameter missing', data);
             reject('malformed queue item');
         } else {
             var map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
             map.complete.then(function (url) {
-                console.info('done!');
+                _log2.default.info('done!');
                 resolve(url);
             }).catch(function (err) {
-                console.error('image generation request failed');
+                _log2.default.error('image generation request failed');
                 (0, _errors2.default)(err);
                 reject(err);
             });
@@ -783,10 +787,10 @@ var generatePrint = function generatePrint(data) {
 };
 
 var queue = new _firebaseQueue2.default(_fb.imageGenerationQueueRef, function (data, progress, resolve, reject) {
-    console.info('imageGeneration queue running for user: ', data.uid);
+    _log2.default.info('imageGeneration queue running for user: ', data.uid);
     generatePrint(data).then(resolve).catch(reject);
 });
 
-console.info('imageGeneration queue up and running');
+_log2.default.info('imageGeneration queue up and running');
 
 exports.default = generatePrint;

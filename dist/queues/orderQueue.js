@@ -20,6 +20,10 @@ var _slack = require('../utils/slack');
 
 var _slack2 = _interopRequireDefault(_slack);
 
+var _log = require('../log');
+
+var _log2 = _interopRequireDefault(_log);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var specs = {
@@ -33,11 +37,11 @@ var STRIPE_TEST_KEY = process.env.STRIPE_TEST_KEY;
 
 var stripe = (0, _stripe2.default)(STRIPE_TEST_KEY);
 
-console.info('order queue up and running!');
+_log2.default.info('order queue up and running!');
 
 var chargeCardQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: specs.chargeCard }, function (data, progress, resolve, reject) {
-    console.info('got new order item, id=' + data.stripe.id);
-    console.info(JSON.stringify(data));
+    _log2.default.info('got new order item, id=' + data.stripe.id);
+    _log2.default.info(JSON.stringify(data));
     // First off, store this order somewhere permanent
     var orderRef = _fb.ordersRef.child(data.stripe.id);
     orderRef.set(data);
@@ -50,12 +54,12 @@ var chargeCardQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: s
         description: 'Charge for Victories print'
     }, function (err, charge) {
         if (err) {
-            console.error(err);
+            _log2.default.error(err);
             var rejectedChargeRef = _fb.rejectedChargesRef.child(data.stripe.id);
             rejectedChargeRef.set(err.raw);
             reject(err);
         } else {
-            console.info('charge succeeded...');
+            _log2.default.info('charge succeeded...');
             // The charge succeeded
             orderRef.update({
                 charge: charge
@@ -122,7 +126,7 @@ var createOrderQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: 
     // Submit the order to printful
     (0, _printful.createOrder)(order).then(function (createdOrder) {
         data.createdOrder = createdOrder;
-        console.info('successfully created printful order');
+        _log2.default.info('successfully created printful order');
         var orderRef = _fb.ordersRef.child(data.stripe.id);
         orderRef.update(data);
         // Post to slack
