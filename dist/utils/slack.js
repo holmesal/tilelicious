@@ -15,7 +15,7 @@ var _log2 = _interopRequireDefault(_log);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var token = 'xoxb-16055557347-5cIM6NSz9WRZe75c7WVy3dqP';
+var token = 'xoxb-16055557347-ekxqLUz7ye081QxFRp9wCLSC';
 var autoReconnect = true;
 var autoMark = true;
 
