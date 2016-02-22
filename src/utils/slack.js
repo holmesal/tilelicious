@@ -19,5 +19,9 @@ slack.login();
 
 export default function say(message) {
     let channel = slack.getChannelGroupOrDMByName('stravahooks');
+    if (!channel) {
+        console.error('slack integration is broken!!!');
+        return false;
+    }
     channel.send(message);
 }
