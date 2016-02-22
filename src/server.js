@@ -14,6 +14,7 @@ app.use('/printful-proxy', proxy(ENDPOINT, {
         //log.info(path);
         if (path === '/' ||
             path === '/tax/rates' ||
+            path === '/countries' ||
             path === '/shipping/rates') {
             return true
         } else {

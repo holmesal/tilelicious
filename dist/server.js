@@ -27,7 +27,7 @@ app.use('/printful-proxy', (0, _expressHttpProxy2.default)(_printful.ENDPOINT, {
     filter: function filter(req, res) {
         var path = _url2.default.parse(req.url).path;
         //log.info(path);
-        if (path === '/' || path === '/tax/rates' || path === '/shipping/rates') {
+        if (path === '/' || path === '/tax/rates' || path === '/countries' || path === '/shipping/rates') {
             return true;
         } else {
             return false;
