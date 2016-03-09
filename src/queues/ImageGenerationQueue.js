@@ -314,6 +314,8 @@ class StravaMap {
         let keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'activities', 'paperSize', 'imageLocation', 'text'];
         let metadata = {};
         keys.forEach(key => metadata[key] = JSON.stringify(this[key]));
+        //metadata.text = _.escape(metadata.text);
+        metadata.text = metadata.text.replace(/[^\x00-\x7F]/g, "");
         streamToS3(stream, key, metadata).then((details) => {
             let elapsed = Math.round((Date.now() - this.startTime) / 100)/10;
             let url = details.Location;

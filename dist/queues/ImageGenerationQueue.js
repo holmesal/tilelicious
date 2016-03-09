@@ -415,6 +415,8 @@ var StravaMap = function () {
             keys.forEach(function (key) {
                 return metadata[key] = JSON.stringify(_this3[key]);
             });
+            //metadata.text = _.escape(metadata.text);
+            metadata.text = metadata.text.replace(/[^\x00-\x7F]/g, "");
             (0, _s2.default)(stream, key, metadata).then(function (details) {
                 var elapsed = Math.round((Date.now() - _this3.startTime) / 100) / 10;
                 var url = details.Location;
