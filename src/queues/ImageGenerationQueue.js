@@ -147,10 +147,10 @@ class StravaMap {
                 this.renderToFile().then((url) => {
                     this.cleanup();
                     this.resolve(url);
-                }).catch((err) => {dumpError(err); this.reject(err);})
-            }).catch((err) => {dumpError(err); this.reject(err);});
+                }).catch((err) => {this.reject(err);})
+            }).catch((err) => {this.reject(err);});
         })
-        .catch((err) => {dumpError(err); this.reject(err);});
+        .catch((err) => {this.reject(err);});
 
 
         //this.renderActivities().then(() => {
@@ -372,7 +372,7 @@ class StravaMap {
                             // Done with all tile operations
                             resolveTile();
                         }).catch((err) => {
-                            log.error('error fetching tile', err); dumpError(err); reject(err);
+                            reject(err);
                         });
 
                     });
@@ -403,8 +403,15 @@ class StravaMap {
                     .timeout(10000)
                     .end((err, res) => {
                         if (err) {
-                            dumpError(err);
-                            reject(err);
+                            log.error('error fetching image tile from mapbox', err);
+                            //dumpError(err);
+                            reject({
+                                stage: 'fetching image tile from mapbox',
+                                error: err,
+                                data: {
+                                    url: url
+                                }
+                            });
                         } else {
                             resolve(res.body)
                         }
@@ -481,7 +488,11 @@ class StravaMap {
                         })
                         .catch(reject)
                 } else {
-                    reject(`no geojson found for activity ${activityId}`);
+                    reject({
+                        stage: 'fetching geojson for activity',
+                        error: `no geojson found for activityId: ${activityId}`,
+                        data: {activityId}
+                    });
                 }
             })
         });
@@ -514,7 +525,14 @@ class StravaMap {
             let xml = mapnikify(geojson, false, (err, xml) => {
                 //log.info(xml);
                 this.pool.acquire((err, map) => {
-                    if (err) dumpError(err);
+                    if (err) {
+                        this.reject({
+                            stage: 'rendering geojson vector',
+                            error: err,
+                            data: {activityId}
+                        });
+                        return false;
+                    }
                     map.fromString(xml, {}, (err, map) => {
                         //map.zoomAll();
 
@@ -657,8 +675,8 @@ const generatePrint = (data) => {
                 resolve(url);
             })
             .catch((err) => {
-                log.error('image generation request failed');
-                dumpError(err);
+                //log.error('image generation request failed, ');
+                //dumpError(err);
                 reject(err);
             })
         }
@@ -666,10 +684,15 @@ const generatePrint = (data) => {
 };
 
 let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject) => {
-    log.info('imageGeneration queue running for user: ', data.uid);
+    log.info('imageGeneration queue running for user: ', data.uid, data);
     generatePrint(data)
         .then(resolve)
-        .catch(reject)
+        .catch((err) => {
+            err.meta = data;
+            dumpError(err);
+            log.info('rejecting image queue!');
+            reject(err);
+        })
 });
 
 log.info('imageGeneration queue up and running');

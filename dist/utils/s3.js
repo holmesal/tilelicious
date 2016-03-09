@@ -40,8 +40,10 @@ function streamToS3(stream, key, metadata) {
 
         // Handle errors.
         upload.on('error', function (error) {
-            _log2.default.error(error);
-            reject(error);
+            reject({
+                stage: 'uploading image to s3',
+                error: error
+            });
         });
 
         /* Handle progress. Example details object:

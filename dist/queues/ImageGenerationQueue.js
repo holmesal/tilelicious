@@ -222,13 +222,13 @@ var StravaMap = function () {
                     _this.cleanup();
                     _this.resolve(url);
                 }).catch(function (err) {
-                    (0, _errors2.default)(err);_this.reject(err);
+                    _this.reject(err);
                 });
             }).catch(function (err) {
-                (0, _errors2.default)(err);_this.reject(err);
+                _this.reject(err);
             });
         }).catch(function (err) {
-            (0, _errors2.default)(err);_this.reject(err);
+            _this.reject(err);
         });
 
         //this.renderActivities().then(() => {
@@ -478,7 +478,7 @@ var StravaMap = function () {
                                 // Done with all tile operations
                                 resolveTile();
                             }).catch(function (err) {
-                                _log2.default.error('error fetching tile', err);(0, _errors2.default)(err);reject(err);
+                                reject(err);
                             });
                         });
                         promises.push(tilePromise);
@@ -516,8 +516,15 @@ var StravaMap = function () {
                 limiter.removeTokens(1, function () {
                     _superagent2.default.get(url).retry(5).timeout(10000).end(function (err, res) {
                         if (err) {
-                            (0, _errors2.default)(err);
-                            reject(err);
+                            _log2.default.error('error fetching image tile from mapbox', err);
+                            //dumpError(err);
+                            reject({
+                                stage: 'fetching image tile from mapbox',
+                                error: err,
+                                data: {
+                                    url: url
+                                }
+                            });
                         } else {
                             resolve(res.body);
                         }
@@ -600,7 +607,11 @@ var StravaMap = function () {
                             resolve();
                         }).catch(reject);
                     } else {
-                        reject('no geojson found for activity ' + activityId);
+                        reject({
+                            stage: 'fetching geojson for activity',
+                            error: 'no geojson found for activityId: ' + activityId,
+                            data: { activityId: activityId }
+                        });
                     }
                 });
             });
@@ -635,7 +646,14 @@ var StravaMap = function () {
                 var xml = (0, _geojsonMapnikify2.default)(geojson, false, function (err, xml) {
                     //log.info(xml);
                     _this8.pool.acquire(function (err, map) {
-                        if (err) (0, _errors2.default)(err);
+                        if (err) {
+                            _this8.reject({
+                                stage: 'rendering geojson vector',
+                                error: err,
+                                data: { activityId: activityId }
+                            });
+                            return false;
+                        }
                         map.fromString(xml, {}, function (err, map) {
                             //map.zoomAll();
 
@@ -778,8 +796,8 @@ var generatePrint = function generatePrint(data) {
                 _log2.default.info('done!');
                 resolve(url);
             }).catch(function (err) {
-                _log2.default.error('image generation request failed');
-                (0, _errors2.default)(err);
+                //log.error('image generation request failed, ');
+                //dumpError(err);
                 reject(err);
             });
         }
@@ -787,8 +805,13 @@ var generatePrint = function generatePrint(data) {
 };
 
 var queue = new _firebaseQueue2.default(_fb.imageGenerationQueueRef, function (data, progress, resolve, reject) {
-    _log2.default.info('imageGeneration queue running for user: ', data.uid);
-    generatePrint(data).then(resolve).catch(reject);
+    _log2.default.info('imageGeneration queue running for user: ', data.uid, data);
+    generatePrint(data).then(resolve).catch(function (err) {
+        err.meta = data;
+        (0, _errors2.default)(err);
+        _log2.default.info('rejecting image queue!');
+        reject(err);
+    });
 });
 
 _log2.default.info('imageGeneration queue up and running');
