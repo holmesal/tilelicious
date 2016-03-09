@@ -367,7 +367,20 @@ class StravaMap {
                             log.info(`tile [${this.renderCount}/${count}] ... drawing ${relX}, ${relY} @ ${pX} [+ ${this.offset[0]}], ${pY} [+${this.offset[1]}]`);
 
                             // Adjust by corner offset and render
-                            this.renderTile(tileBuffer, pX - this.offset[0], pY - this.offset[1]);
+                            try {
+                                this.renderTile(tileBuffer, pX - this.offset[0], pY - this.offset[1]);
+                            } catch(err) {
+                                log.error(err);
+                                reject({
+                                    stage: 'rendering image tile',
+                                    error: err,
+                                    data: {
+                                        x, y,
+                                        z: this.tileZ
+                                    }
+                                });
+                                return false;
+                            }
 
                             // Done with all tile operations
                             resolveTile();
@@ -526,10 +539,10 @@ class StravaMap {
                 //log.info(xml);
                 this.pool.acquire((err, map) => {
                     if (err) {
+                        log.error(err)
                         this.reject({
-                            stage: 'rendering geojson vector',
-                            error: err,
-                            data: {activityId}
+                            stage: 'acquiring map from pool',
+                            error: err
                         });
                         return false;
                     }
@@ -544,7 +557,14 @@ class StravaMap {
 
                         // Render this map to an image buffer
                         map.render(this.im, (err, im) => {
-                            if (err) {reject(err); return}
+                            if (err) {
+                                log.error(err);
+                                reject({
+                                    stage: 'rendering map to image buffer',
+                                    error: err
+                                });
+                                return false
+                            }
                             log.info(`--- done rendering activity ${activityId}`)
                             // Release this map so other threads can draw on it
                             this.pool.release(map);
@@ -667,7 +687,11 @@ const generatePrint = (data) => {
         log.info(data);
         if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
             log.error('parameter missing', data);
-            reject('malformed queue item');
+            reject({
+                stage: 'checking validity of queue item data',
+                error: 'missing parameter',
+                data: data
+            });
         } else {
             let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
             map.complete.then((url) => {

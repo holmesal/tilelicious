@@ -473,7 +473,20 @@ var StravaMap = function () {
                                 _log2.default.info('tile [' + _this4.renderCount + '/' + count + '] ... drawing ' + relX + ', ' + relY + ' @ ' + pX + ' [+ ' + _this4.offset[0] + '], ' + pY + ' [+' + _this4.offset[1] + ']');
 
                                 // Adjust by corner offset and render
-                                _this4.renderTile(tileBuffer, pX - _this4.offset[0], pY - _this4.offset[1]);
+                                try {
+                                    _this4.renderTile(tileBuffer, pX - _this4.offset[0], pY - _this4.offset[1]);
+                                } catch (err) {
+                                    _log2.default.error(err);
+                                    reject({
+                                        stage: 'rendering image tile',
+                                        error: err,
+                                        data: {
+                                            x: x, y: y,
+                                            z: _this4.tileZ
+                                        }
+                                    });
+                                    return false;
+                                }
 
                                 // Done with all tile operations
                                 resolveTile();
@@ -647,10 +660,10 @@ var StravaMap = function () {
                     //log.info(xml);
                     _this8.pool.acquire(function (err, map) {
                         if (err) {
+                            _log2.default.error(err);
                             _this8.reject({
-                                stage: 'rendering geojson vector',
-                                error: err,
-                                data: { activityId: activityId }
+                                stage: 'acquiring map from pool',
+                                error: err
                             });
                             return false;
                         }
@@ -666,7 +679,12 @@ var StravaMap = function () {
                             // Render this map to an image buffer
                             map.render(_this8.im, function (err, im) {
                                 if (err) {
-                                    reject(err);return;
+                                    _log2.default.error(err);
+                                    reject({
+                                        stage: 'rendering map to image buffer',
+                                        error: err
+                                    });
+                                    return false;
                                 }
                                 _log2.default.info('--- done rendering activity ' + activityId);
                                 // Release this map so other threads can draw on it
@@ -789,7 +807,11 @@ var generatePrint = function generatePrint(data) {
         _log2.default.info(data);
         if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
             _log2.default.error('parameter missing', data);
-            reject('malformed queue item');
+            reject({
+                stage: 'checking validity of queue item data',
+                error: 'missing parameter',
+                data: data
+            });
         } else {
             var map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
             map.complete.then(function (url) {

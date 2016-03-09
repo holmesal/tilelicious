@@ -5,12 +5,13 @@ export default function dumpError(err) {
     // Log via winston
     log.error(err)
     let {stage, error, meta, data} = err;
+    if (typeof error === 'error') error = error.message;
     if (error && typeof error != 'string') error = JSON.stringify(error);
     if (meta && typeof meta != 'string') meta = JSON.stringify(meta);
     if (data && typeof data != 'string') data = JSON.stringify(data);
 
     // Log via slack
-    say(`:fire::fire::computer::fire::fire: error in stage: *${stage}* \nwith content: \n\`*${error}\` \nand meta \n\`${meta}\`\nand data \n\`${data}\``);
+    say(`:fire::fire::computer::fire::fire: error in stage: *${stage}* \nwith content: \n\`${error}\` \nand meta \n\`${meta}\`\nand data \n\`${data}\``);
     //if (typeof err === 'object') {
     //    if (err.message) {
     //        log.error('\nMessage: ' + err.message)

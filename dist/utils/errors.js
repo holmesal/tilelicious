@@ -23,12 +23,13 @@ function dumpError(err) {
     var meta = err.meta;
     var data = err.data;
 
+    if (typeof error === 'error') error = error.message;
     if (error && typeof error != 'string') error = JSON.stringify(error);
     if (meta && typeof meta != 'string') meta = JSON.stringify(meta);
     if (data && typeof data != 'string') data = JSON.stringify(data);
 
     // Log via slack
-    (0, _slack2.default)(':fire::fire::computer::fire::fire: error in stage: *' + stage + '* \nwith content: \n`*' + error + '` \nand meta \n`' + meta + '`\nand data \n`' + data + '`');
+    (0, _slack2.default)(':fire::fire::computer::fire::fire: error in stage: *' + stage + '* \nwith content: \n`' + error + '` \nand meta \n`' + meta + '`\nand data \n`' + data + '`');
     //if (typeof err === 'object') {
     //    if (err.message) {
     //        log.error('\nMessage: ' + err.message)
