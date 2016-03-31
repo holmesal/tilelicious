@@ -11,7 +11,7 @@ import MapnikPool from 'mapnik-pool';
 import toGeoJSON from 'togeojson';
 import mapnikify from 'geojson-mapnikify';
 import _ from 'lodash';
-import {getDims, screenSizes} from '../utils/sizes';
+import {getDims} from '../utils/sizes';
 import retry from 'superagent-retry';
 import {RateLimiter} from 'limiter';
 import {imageGenerationQueueRef, activityStreamRef, rootRef} from '../utils/fb';
@@ -21,6 +21,9 @@ import slack from '../utils/slack';
 import renderText from '../utils/renderText';
 import dumpError from '../utils/errors';
 import log from '../log';
+
+const SKIP_TILES = process.env.NODE_ENV != 'production' && false;
+const SKIP_ACTIVITIES = process.env.NODE_ENV != 'production' && true;
 
 // Shim with custom text rendering function
 Context2d.prototype.renderText = renderText;
@@ -56,6 +59,7 @@ let TILE_SIZE = 256;
 class StravaMap {
     constructor(pixelsScreen, zScreen, bboxScreen, paperSize, theme, vectorScaleScale, uid, activities, imageLocation, text) {
         this.textColor = theme.textColor;
+        this.copyrightTextColor = theme.copyrightTextColor;
         this.mapCreds = theme.mapCreds;
         this.zScreen = zScreen;
         this.vectorStyle = theme.vectorStyle;
@@ -275,11 +279,11 @@ class StravaMap {
     drawTextToCanvas() {
         // Insert spaces between each character
         let text = this.text.split('').join(' ');
-        let {printHeight, printWidth, paddingTop, mapHeight, mapWidth, fontSize, letterSpacing} = this.pixelsPrint;
+        let {printHeight, printWidth, paddingTop, mapHeight, mapWidth, fontSize, copyrightFontSize, letterSpacing, textMarginTop} = this.pixelsPrint;
         // Figure out the top left of the rectangle
         let bottomAreaHeight = printHeight - mapHeight - paddingTop;
         // Text is drawn from the lower-left! Importante!
-        let relTextY = bottomAreaHeight / 2;
+        let relTextY = textMarginTop + fontSize;//bottomAreaHeight / 2;
         let textY = paddingTop + mapHeight + relTextY;
 
         // Measure the text
@@ -288,12 +292,22 @@ class StravaMap {
         let textX = this.locations.mapUpperLeft.x + (mapWidth) / 2;
         log.info('text width is', textWidth, 'and is at x', textX);
 
-        // Draw a red rectangle for now
         this.ctx.fillStyle = this.textColor;
         this.ctx.textAlign = 'center';
         //this.ctx.fillRect(textX, textY, textWidth, fontSize);
         this.ctx.fillText(text, textX, textY, 0);
         //this.ctx.renderText(this.text, textX+letterSpacing/2, textY, letterSpacing);
+
+        // Draw the copyright text
+        const copyrightTextPadding = 20;
+        let copyrightTextY = paddingTop + mapHeight - copyrightTextPadding;
+        const copyrightTextX = ((printWidth - mapWidth) / 2) + mapWidth - copyrightTextPadding;
+        this.ctx.font = `${copyrightFontSize}px HelveticaNeue`;
+        this.ctx.fillStyle = this.copyrightTextColor;
+        this.ctx.textAlign = 'right';
+        //this.ctx.fillRect(copyrightTextX, copyrightTextY, 200, fontSize);
+        console.info(`rendering copyright text at ${copyrightTextX}, ${copyrightTextY}`);
+        this.ctx.fillText('© Mapbox, © OpenStreetMap', copyrightTextX, copyrightTextY, 0);
     }
 
     streamToLocalFS(stream, key, resolve, reject) {
@@ -339,6 +353,11 @@ class StravaMap {
 
     fetchMapboxImages() {
         return new Promise((resolve, reject) => {
+            // Skip if on debug
+            if (SKIP_TILES) {
+                resolve();
+                return;
+            }
             // Render count starts off at 0
             this.renderCount = 0;
 
@@ -469,6 +488,11 @@ class StravaMap {
 
             // Create a mapnik pool
             this.pool = new mapnikPool.fromString('<Map></Map>', {size: {width: this.pixelsPrint.mapWidth, height: this.pixelsPrint.mapHeight}});
+
+            if (SKIP_ACTIVITIES) {
+                resolve();
+                return;
+            }
 
             //// Render the activites
             let promises = [];
@@ -603,7 +627,8 @@ let themes = {
             strokeWidth: 1
         },
         backgroundColor: '#202020',
-        textColor: '#202020'
+        textColor: '#202020',
+        copyrightTextColor: '#535353'
     },
     light: {
         mapCreds: {
@@ -616,7 +641,8 @@ let themes = {
             strokeWidth: 1
         },
         backgroundColor: '#FFFFFF',
-        textColor: '#202020'
+        textColor: '#202020',
+        copyrightTextColor: '#cecece'
     }
 };
 

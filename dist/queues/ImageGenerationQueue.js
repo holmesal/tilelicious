@@ -93,6 +93,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var SKIP_TILES = process.env.NODE_ENV != 'production' && false;
+var SKIP_ACTIVITIES = process.env.NODE_ENV != 'production' && true;
+
 // Shim with custom text rendering function
 _canvas.Context2d.prototype.renderText = _renderText2.default;
 
@@ -131,6 +134,7 @@ var StravaMap = function () {
         _classCallCheck(this, StravaMap);
 
         this.textColor = theme.textColor;
+        this.copyrightTextColor = theme.copyrightTextColor;
         this.mapCreds = theme.mapCreds;
         this.zScreen = zScreen;
         this.vectorStyle = theme.vectorStyle;
@@ -369,12 +373,14 @@ var StravaMap = function () {
             var mapHeight = _pixelsPrint.mapHeight;
             var mapWidth = _pixelsPrint.mapWidth;
             var fontSize = _pixelsPrint.fontSize;
+            var copyrightFontSize = _pixelsPrint.copyrightFontSize;
             var letterSpacing = _pixelsPrint.letterSpacing;
+            var textMarginTop = _pixelsPrint.textMarginTop;
             // Figure out the top left of the rectangle
 
             var bottomAreaHeight = printHeight - mapHeight - paddingTop;
             // Text is drawn from the lower-left! Importante!
-            var relTextY = bottomAreaHeight / 2;
+            var relTextY = textMarginTop + fontSize; //bottomAreaHeight / 2;
             var textY = paddingTop + mapHeight + relTextY;
 
             // Measure the text
@@ -383,12 +389,22 @@ var StravaMap = function () {
             var textX = this.locations.mapUpperLeft.x + mapWidth / 2;
             _log2.default.info('text width is', textWidth, 'and is at x', textX);
 
-            // Draw a red rectangle for now
             this.ctx.fillStyle = this.textColor;
             this.ctx.textAlign = 'center';
             //this.ctx.fillRect(textX, textY, textWidth, fontSize);
             this.ctx.fillText(text, textX, textY, 0);
             //this.ctx.renderText(this.text, textX+letterSpacing/2, textY, letterSpacing);
+
+            // Draw the copyright text
+            var copyrightTextPadding = 20;
+            var copyrightTextY = paddingTop + mapHeight - copyrightTextPadding;
+            var copyrightTextX = (printWidth - mapWidth) / 2 + mapWidth - copyrightTextPadding;
+            this.ctx.font = copyrightFontSize + 'px HelveticaNeue';
+            this.ctx.fillStyle = this.copyrightTextColor;
+            this.ctx.textAlign = 'right';
+            //this.ctx.fillRect(copyrightTextX, copyrightTextY, 200, fontSize);
+            console.info('rendering copyright text at ' + copyrightTextX + ', ' + copyrightTextY);
+            this.ctx.fillText('© Mapbox, © OpenStreetMap', copyrightTextX, copyrightTextY, 0);
         }
     }, {
         key: 'streamToLocalFS',
@@ -444,6 +460,11 @@ var StravaMap = function () {
             var _this4 = this;
 
             return new Promise(function (resolve, reject) {
+                // Skip if on debug
+                if (SKIP_TILES) {
+                    resolve();
+                    return;
+                }
                 // Render count starts off at 0
                 _this4.renderCount = 0;
 
@@ -588,6 +609,11 @@ var StravaMap = function () {
                 // Create a mapnik pool
                 _this6.pool = new mapnikPool.fromString('<Map></Map>', { size: { width: _this6.pixelsPrint.mapWidth, height: _this6.pixelsPrint.mapHeight } });
 
+                if (SKIP_ACTIVITIES) {
+                    resolve();
+                    return;
+                }
+
                 //// Render the activites
                 var promises = [];
                 _this6.activities.forEach(function (activityId) {
@@ -726,7 +752,8 @@ var themes = {
             strokeWidth: 1
         },
         backgroundColor: '#202020',
-        textColor: '#202020'
+        textColor: '#202020',
+        copyrightTextColor: '#535353'
     },
     light: {
         mapCreds: {
@@ -739,7 +766,8 @@ var themes = {
             strokeWidth: 1
         },
         backgroundColor: '#FFFFFF',
-        textColor: '#202020'
+        textColor: '#202020',
+        copyrightTextColor: '#cecece'
     }
 };
 
