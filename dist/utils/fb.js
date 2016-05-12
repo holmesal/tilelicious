@@ -59,5 +59,5 @@ var rejectedChargesRef = exports.rejectedChargesRef = rootRef.child('rejectedCha
 var serviceRequestsRef = exports.serviceRequestsRef = rootRef.child('serviceRequests');
 
 // uncomment to DESTROY
-//rootRef.child('activityByUser').set(null);
-//rootRef.child('activityStreamsRef').set(null);
+// rootRef.child('activityByUser').set(null);
+// rootRef.child('streamByActivity').set(null);

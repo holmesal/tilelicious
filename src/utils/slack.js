@@ -36,5 +36,5 @@ rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function () {
 rtm.start();
 
 export default function say(message) {
-    rtm.sendMessage(message, 'stravahooks');
+    rtm.sendMessage(message, stravahooksChannel.id);
 }

@@ -4,15 +4,17 @@ import {userRef, userActivityRef, activityNomNomQueueRef} from '../utils/fb';
 import StreamNomNom from './StreamNomNom';
 import Queue from 'firebase-queue';
 import log from '../log';
+import slack from '../utils/slack';
 
 const PER_PAGE = 200;
 
 class ActivityNomNom {
 
-    constructor(uid, resolve, reject) {
+    constructor(uid, resolve, reject, taskId) {
         this.uid = uid;
         this.resolve = resolve;
         this.reject = reject;
+        this.taskId = taskId;
 
         this.userActivityRef = userActivityRef(uid);
 
@@ -41,8 +43,15 @@ class ActivityNomNom {
             access_token: this.access_token
         }, (err, res) => {
             if (err || res.errors) {
-                this.reject(JSON.stringify(res));
-                log.error(err, res);
+                const rej = JSON.stringify({
+                    error: err,
+                    response: res,
+                    activityId: this.activityId,
+                    uid: this.uid
+                });
+                this.reject(rej);
+                log.error(err, res, rej);
+                slack(`*Error fetching activities*\n\`${rej}\`\n${activityNomNomQueueRef.child('tasks').child(this.taskId).toString()}`)
             } else {
                 let activities = res;
                 if (activities.length > 0) {
@@ -88,7 +97,7 @@ class ActivityNomNom {
 
 log.info('activityNomNom queue up and running');
 
-let queue = new Queue(activityNomNomQueueRef, (data, progress, resolve, reject) => {
+let queue = new Queue(activityNomNomQueueRef, {sanitize: false}, (data, progress, resolve, reject) => {
     log.info('activityNomNomQueue running for user: ', data.uid);
-    let activity = new ActivityNomNom(data.uid, resolve, reject);
+    let activity = new ActivityNomNom(data.uid, resolve, reject, data._id);
 });

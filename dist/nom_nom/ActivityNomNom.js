@@ -24,6 +24,10 @@ var _log = require('../log');
 
 var _log2 = _interopRequireDefault(_log);
 
+var _slack = require('../utils/slack');
+
+var _slack2 = _interopRequireDefault(_slack);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -31,7 +35,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var PER_PAGE = 200;
 
 var ActivityNomNom = function () {
-    function ActivityNomNom(uid, resolve, reject) {
+    function ActivityNomNom(uid, resolve, reject, taskId) {
         var _this = this;
 
         _classCallCheck(this, ActivityNomNom);
@@ -39,6 +43,7 @@ var ActivityNomNom = function () {
         this.uid = uid;
         this.resolve = resolve;
         this.reject = reject;
+        this.taskId = taskId;
 
         this.userActivityRef = (0, _fb.userActivityRef)(uid);
 
@@ -72,8 +77,15 @@ var ActivityNomNom = function () {
                 access_token: this.access_token
             }, function (err, res) {
                 if (err || res.errors) {
-                    _this2.reject(JSON.stringify(res));
-                    _log2.default.error(err, res);
+                    var rej = JSON.stringify({
+                        error: err,
+                        response: res,
+                        activityId: _this2.activityId,
+                        uid: _this2.uid
+                    });
+                    _this2.reject(rej);
+                    _log2.default.error(err, res, rej);
+                    (0, _slack2.default)('*Error fetching activities*\n`' + rej + '`\n' + _fb.activityNomNomQueueRef.child('tasks').child(_this2.taskId).toString());
                 } else {
                     var activities = res;
                     if (activities.length > 0) {
@@ -115,7 +127,7 @@ var ActivityNomNom = function () {
 
 _log2.default.info('activityNomNom queue up and running');
 
-var queue = new _firebaseQueue2.default(_fb.activityNomNomQueueRef, function (data, progress, resolve, reject) {
+var queue = new _firebaseQueue2.default(_fb.activityNomNomQueueRef, { sanitize: false }, function (data, progress, resolve, reject) {
     _log2.default.info('activityNomNomQueue running for user: ', data.uid);
-    var activity = new ActivityNomNom(data.uid, resolve, reject);
+    var activity = new ActivityNomNom(data.uid, resolve, reject, data._id);
 });

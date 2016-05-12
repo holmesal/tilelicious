@@ -28,6 +28,10 @@ var _log = require('../log');
 
 var _log2 = _interopRequireDefault(_log);
 
+var _slack = require('../utils/slack');
+
+var _slack2 = _interopRequireDefault(_slack);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -35,7 +39,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 var FORCE_REFETCH = true;
 
 var StreamNomNom = function () {
-    function StreamNomNom(uid, activityId, resolve, reject) {
+    function StreamNomNom(uid, activityId, resolve, reject, taskId) {
         var _this = this;
 
         _classCallCheck(this, StreamNomNom);
@@ -44,6 +48,7 @@ var StreamNomNom = function () {
         this.activityId = activityId;
         this.resolve = resolve;
         this.reject = reject;
+        this.taskId = taskId;
         var that = this;
         // Only fetch this stream if it doesn't exist in firebase
         (0, _fb.activityStreamRef)(activityId).child('hasData').once('value', function (snap) {
@@ -75,9 +80,9 @@ var StreamNomNom = function () {
             _stravaV2.default.streams.activity({
                 id: this.activityId,
                 types: 'latlng',
-                resolution: 'medium'
-            }, // access_token: this.access_token
-            function (err, stream) {
+                resolution: 'medium',
+                access_token: this.access_token
+            }, function (err, stream) {
                 if (err) {
                     _log2.default.error(err);
                     _this2.reject(err);
@@ -93,8 +98,17 @@ var StreamNomNom = function () {
                     } else {
                         // TODO - remove the stream activity from firebase in this case, so the loading can at least finish and the image generation doesn't error out later...
                         _log2.default.info('no data returned for this stream?');
-                        _log2.default.info(stream);
-                        _this2.reject(err);
+                        var rej = JSON.stringify({
+                            error: err,
+                            streamResponse: stream,
+                            activityId: _this2.activityId,
+                            uid: _this2.uid
+                        });
+                        _log2.default.info(rej);
+                        // Tattle in slack
+                        (0, _slack2.default)('*Error fetching stream*\n`' + rej + '`\n' + _fb.streamNomNomQueueRef.child('tasks').child(_this2.taskId).toString());
+                        // Done
+                        _this2.reject(rej);
                     }
                 }
             });
@@ -131,11 +145,11 @@ var StreamNomNom = function () {
 exports.default = StreamNomNom;
 _log2.default.info('streamNomNom queue up and running');
 
-var queue = new _firebaseQueue2.default(_fb.streamNomNomQueueRef, function (data, progress, resolve, reject) {
+var queue = new _firebaseQueue2.default(_fb.streamNomNomQueueRef, { sanitize: false }, function (data, progress, resolve, reject) {
     _log2.default.info('streamNomNomQueue running for user: ', data.uid, ' and activity ', data.activityId);
     if (!data.uid || !data.activityId) {
         reject('something was undefined: activityId: ' + data.activityId + '   uid: ' + data.uid);
     } else {
-        var stream = new StreamNomNom(data.uid, data.activityId, resolve, reject);
+        var stream = new StreamNomNom(data.uid, data.activityId, resolve, reject, data._id);
     }
 });

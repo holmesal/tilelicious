@@ -41,5 +41,5 @@ export const rejectedChargesRef = rootRef.child(`rejectedCharges`);
 export const serviceRequestsRef = rootRef.child(`serviceRequests`);
 
 // uncomment to DESTROY
-//rootRef.child('activityByUser').set(null);
-//rootRef.child('activityStreamsRef').set(null);
+// rootRef.child('activityByUser').set(null);
+// rootRef.child('streamByActivity').set(null);

@@ -4,17 +4,19 @@ import {activityStreamRef, userRef, userActivityRef, streamNomNomQueueRef} from 
 import Queue from 'firebase-queue';
 import geojson from 'geojson';
 import log from '../log';
+import slack from '../utils/slack';
 
 const FORCE_REFETCH = true;
 
 
 export default class StreamNomNom {
 
-    constructor(uid, activityId, resolve, reject) {
+    constructor(uid, activityId, resolve, reject, taskId) {
         this.uid = uid;
         this.activityId = activityId;
         this.resolve = resolve;
         this.reject = reject;
+        this.taskId = taskId;
         let that = this;
         // Only fetch this stream if it doesn't exist in firebase
         activityStreamRef(activityId).child('hasData').once('value', (snap) => {
@@ -43,7 +45,7 @@ export default class StreamNomNom {
             id: this.activityId,
             types: 'latlng',
             resolution: 'medium',
-            // access_token: this.access_token
+            access_token: this.access_token
         }, (err, stream) => {
             if (err) {
                 log.error(err);
@@ -60,8 +62,17 @@ export default class StreamNomNom {
                 } else {
                     // TODO - remove the stream activity from firebase in this case, so the loading can at least finish and the image generation doesn't error out later...
                     log.info('no data returned for this stream?');
-                    log.info(stream);
-                    this.reject(err);
+                    const rej = JSON.stringify({
+                        error: err,
+                        streamResponse: stream,
+                        activityId: this.activityId,
+                        uid: this.uid
+                    });
+                    log.info(rej);
+                    // Tattle in slack
+                    slack(`*Error fetching stream*\n\`${rej}\`\n${streamNomNomQueueRef.child('tasks').child(this.taskId).toString()}`);
+                    // Done
+                    this.reject(rej);
                 }
             }
         })
@@ -90,11 +101,11 @@ export default class StreamNomNom {
 
 log.info('streamNomNom queue up and running');
 
-let queue = new Queue(streamNomNomQueueRef, (data, progress, resolve, reject) => {
+let queue = new Queue(streamNomNomQueueRef, {sanitize: false}, (data, progress, resolve, reject) => {
     log.info('streamNomNomQueue running for user: ', data.uid, ' and activity ', data.activityId);
     if (!data.uid || !data.activityId) {
         reject(`something was undefined: activityId: ${data.activityId}   uid: ${data.uid}`);
     } else {
-        let stream = new StreamNomNom(data.uid, data.activityId, resolve, reject);
+        let stream = new StreamNomNom(data.uid, data.activityId, resolve, reject, data._id);
     }
 });

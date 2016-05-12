@@ -23,7 +23,7 @@
     "express": "^4.13.3",
     "express-http-proxy": "^0.6.0",
     "firebase": "^2.3.2",
-    "firebase-queue": "^1.2.1",
+    "firebase-queue": "^1.3.1",
     "geo-viewport": "^0.1.1",
     "geojson": "^0.2.1",
     "geojson-mapnikify": "^0.6.1",
