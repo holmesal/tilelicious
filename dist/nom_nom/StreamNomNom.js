@@ -107,6 +107,8 @@ var StreamNomNom = function () {
                         _log2.default.info(rej);
                         // Tattle in slack
                         (0, _slack2.default)('*Error fetching stream*\n`' + rej + '`\n' + _fb.streamNomNomQueueRef.child('tasks').child(_this2.taskId).toString());
+                        // Nuke this activity
+                        (0, _fb.activityStreamRef)(_this2.activityId).set(null);
                         // Done
                         _this2.reject(rej);
                     }

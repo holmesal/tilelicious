@@ -671,11 +671,13 @@ var StravaMap = function () {
                             resolve();
                         }).catch(reject);
                     } else {
-                        reject({
+                        var rej = JSON.stringify({
                             stage: 'fetching geojson for activity',
                             error: 'no geojson found for activityId: ' + activityId,
                             data: { activityId: activityId }
                         });
+                        (0, _slack2.default)('*Tried to render a GeoJSON that didn\'t exist... :-/*\n`' + rej + '`\n' + (0, _fb.activityStreamRef)(activityId).toString());
+                        resolve();
                     }
                 });
             });

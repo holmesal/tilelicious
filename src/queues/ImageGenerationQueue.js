@@ -542,11 +542,13 @@ class StravaMap {
                         })
                         .catch(reject)
                 } else {
-                    reject({
+                    const rej = JSON.stringify({
                         stage: 'fetching geojson for activity',
                         error: `no geojson found for activityId: ${activityId}`,
                         data: {activityId}
                     });
+                    slack(`*Tried to render a GeoJSON that didn't exist... :-/*\n\`${rej}\`\n${activityStreamRef(activityId).toString()}`);
+                    resolve();
                 }
             })
         });

@@ -71,6 +71,8 @@ export default class StreamNomNom {
                     log.info(rej);
                     // Tattle in slack
                     slack(`*Error fetching stream*\n\`${rej}\`\n${streamNomNomQueueRef.child('tasks').child(this.taskId).toString()}`);
+                    // Nuke this activity
+                    activityStreamRef(this.activityId).set(null);
                     // Done
                     this.reject(rej);
                 }
