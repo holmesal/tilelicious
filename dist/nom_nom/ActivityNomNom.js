@@ -114,7 +114,9 @@ var ActivityNomNom = function () {
 
             _lodash2.default.forEach(activities, function (activity) {
                 activity.created = Date.now();
-                _this3.userActivityRef.child(activity.id).set(_lodash2.default.pick(activity, 'id', 'created', 'start_latlng', 'end_latlng', 'location_city', 'location_country', 'location_state', 'type', 'athlete'));
+                activity.age = activity.created - new Date(activity.start_date);
+                // console.info(activity);
+                _this3.userActivityRef.child(activity.id).set(_lodash2.default.pick(activity, 'id', 'age', 'created', 'start_latlng', 'end_latlng', 'location_city', 'location_country', 'location_state', 'type', 'athlete'));
 
                 // DANGER - uncomment this line to pull in stream data for all of these activities
                 //new StreamNomNom(this.uid, activity.id)

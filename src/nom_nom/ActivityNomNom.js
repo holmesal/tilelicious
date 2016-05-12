@@ -77,8 +77,11 @@ class ActivityNomNom {
     pushActivitiesToFirebase(activities) {
         _.forEach(activities, (activity) => {
             activity.created = Date.now();
+            activity.age = activity.created - new Date(activity.start_date);
+            // console.info(activity);
             this.userActivityRef.child(activity.id).set(_.pick(activity,
                 'id',
+                'age',
                 'created',
                 'start_latlng',
                 'end_latlng',
