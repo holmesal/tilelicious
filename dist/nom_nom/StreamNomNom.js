@@ -32,8 +32,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var FORCE_REFETCH = true;
+
 var StreamNomNom = function () {
     function StreamNomNom(uid, activityId, resolve, reject) {
+        var _this = this;
+
         _classCallCheck(this, StreamNomNom);
 
         this.uid = uid;
@@ -43,11 +47,22 @@ var StreamNomNom = function () {
         var that = this;
         // Only fetch this stream if it doesn't exist in firebase
         (0, _fb.activityStreamRef)(activityId).child('hasData').once('value', function (snap) {
-            if (snap.val()) {
+            if (snap.val() && !FORCE_REFETCH) {
                 _log2.default.info('not fetching stream, it is already loaded');
             } else {
                 _log2.default.info('fetching stream: ', activityId);
-                that.fetchStream();
+                // Fetch the token to use with this request
+                _log2.default.info('fetching token for ', _this.uid);
+                (0, _fb.userRef)(_this.uid).child('access_token').once('value', function (snap) {
+                    var token = snap.val();
+                    _log2.default.info('got token, ', token);
+                    if (!token) {
+                        reject('could not find this user token, got: ' + token);
+                    } else {
+                        _this.access_token = token;
+                        _this.fetchStream();
+                    }
+                });
             }
         });
     }
@@ -55,29 +70,31 @@ var StreamNomNom = function () {
     _createClass(StreamNomNom, [{
         key: 'fetchStream',
         value: function fetchStream() {
-            var _this = this;
+            var _this2 = this;
 
             _stravaV2.default.streams.activity({
                 id: this.activityId,
                 types: 'latlng',
                 resolution: 'medium'
-            }, function (err, stream) {
+            }, // access_token: this.access_token
+            function (err, stream) {
                 if (err) {
                     _log2.default.error(err);
-                    _this.reject(err);
+                    _this2.reject(err);
                 } else {
                     var latlng = _lodash2.default.findWhere(stream, { type: 'latlng' });
                     //log.info(stream);
                     if (latlng) {
-                        latlng.geojson = _this.convertStreamToGeoJSON(latlng.data);
+                        latlng.geojson = _this2.convertStreamToGeoJSON(latlng.data);
                         delete latlng.data;
-                        _log2.default.info('done fetching stream ', _this.activityId);
-                        _this.pushStreamToFirebase(latlng);
-                        _this.resolve();
+                        _log2.default.info('done fetching stream ', _this2.activityId);
+                        _this2.pushStreamToFirebase(latlng);
+                        _this2.resolve();
                     } else {
+                        // TODO - remove the stream activity from firebase in this case, so the loading can at least finish and the image generation doesn't error out later...
                         _log2.default.info('no data returned for this stream?');
                         _log2.default.info(stream);
-                        _this.reject(err);
+                        _this2.reject(err);
                     }
                 }
             });

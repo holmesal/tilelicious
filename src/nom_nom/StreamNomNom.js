@@ -1,9 +1,11 @@
 import strava from 'strava-v3';
 import _ from 'lodash';
-import {activityStreamRef, userActivityRef, streamNomNomQueueRef} from '../utils/fb';
+import {activityStreamRef, userRef, userActivityRef, streamNomNomQueueRef} from '../utils/fb';
 import Queue from 'firebase-queue';
 import geojson from 'geojson';
 import log from '../log';
+
+const FORCE_REFETCH = true;
 
 
 export default class StreamNomNom {
@@ -16,11 +18,22 @@ export default class StreamNomNom {
         let that = this;
         // Only fetch this stream if it doesn't exist in firebase
         activityStreamRef(activityId).child('hasData').once('value', (snap) => {
-            if (snap.val()) {
+            if (snap.val() && !FORCE_REFETCH) {
                 log.info('not fetching stream, it is already loaded')
             } else {
                 log.info('fetching stream: ', activityId);
-                that.fetchStream()
+                // Fetch the token to use with this request
+                log.info('fetching token for ', this.uid)
+                userRef(this.uid).child('access_token').once('value', (snap) => {
+                    let token = snap.val();
+                    log.info('got token, ', token);
+                    if (!token) {
+                        reject('could not find this user token, got: ' + token);
+                    } else {
+                        this.access_token = token;
+                        this.fetchStream()
+                    }
+                });
             }
         });
     }
@@ -29,7 +42,8 @@ export default class StreamNomNom {
         strava.streams.activity({
             id: this.activityId,
             types: 'latlng',
-            resolution: 'medium'
+            resolution: 'medium',
+            // access_token: this.access_token
         }, (err, stream) => {
             if (err) {
                 log.error(err);
@@ -44,6 +58,7 @@ export default class StreamNomNom {
                     this.pushStreamToFirebase(latlng);
                     this.resolve();
                 } else {
+                    // TODO - remove the stream activity from firebase in this case, so the loading can at least finish and the image generation doesn't error out later...
                     log.info('no data returned for this stream?');
                     log.info(stream);
                     this.reject(err);
