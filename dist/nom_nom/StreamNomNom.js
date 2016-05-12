@@ -76,6 +76,7 @@ var StreamNomNom = function () {
                         _this.resolve();
                     } else {
                         _log2.default.info('no data returned for this stream?');
+                        _log2.default.info(stream);
                         _this.reject(err);
                     }
                 }

@@ -45,6 +45,7 @@ export default class StreamNomNom {
                     this.resolve();
                 } else {
                     log.info('no data returned for this stream?');
+                    log.info(stream);
                     this.reject(err);
                 }
             }

@@ -21,9 +21,17 @@ import slack from '../utils/slack';
 import renderText from '../utils/renderText';
 import dumpError from '../utils/errors';
 import log from '../log';
+import bytes from 'bytes'
+import stringifyObject from 'stringify-object';
+
+import memwatch from 'memwatch-next';
 
 const SKIP_TILES = process.env.NODE_ENV != 'production' && false;
-const SKIP_ACTIVITIES = process.env.NODE_ENV != 'production' && true;
+const SKIP_ACTIVITIES = process.env.NODE_ENV != 'production' && false;
+
+memwatch.on('leak', function(info) {
+    console.info('memory leak!', info);
+});
 
 // Shim with custom text rendering function
 Context2d.prototype.renderText = renderText;
@@ -56,6 +64,11 @@ let BORDER = 50;
 // Maximum static map size, from mapbox
 let TILE_SIZE = 256;
 
+function logMemory() {
+    const mem = process.memoryUsage();
+    console.info(`memory usage: ${bytes(mem.heapUsed)} / ${bytes(mem.heapTotal)}`);
+}
+
 class StravaMap {
     constructor(pixelsScreen, zScreen, bboxScreen, paperSize, theme, vectorScaleScale, uid, activities, imageLocation, text) {
         this.textColor = theme.textColor;
@@ -70,6 +83,8 @@ class StravaMap {
         this.paperSize = paperSize;
         this.imageLocation = imageLocation;
         this.text = text;
+
+        logMemory();
 
         this.startTime = Date.now();
 
@@ -605,10 +620,10 @@ class StravaMap {
     }
 
     cleanup() {
-        log.info(util.inspect(process.memoryUsage()));
+        logMemory();
         log.info('cleaning up...')
         this.pool.destroy();
-        log.info(util.inspect(process.memoryUsage()));
+        logMemory();
     }
 }
 
@@ -721,15 +736,20 @@ const generatePrint = (data) => {
                 data: data
             });
         } else {
+            let hd = new memwatch.HeapDiff();
             let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
             map.complete.then((url) => {
-                log.info('done!');
+                let diff = hd.end();
+                console.info('vvv heap diff ---');
+                console.info(stringifyObject(diff));
                 resolve(url);
+                map = null;
             })
             .catch((err) => {
-                //log.error('image generation request failed, ');
+                log.error('image generation request failed...');
                 //dumpError(err);
                 reject(err);
+                map = null;
             })
         }
     });

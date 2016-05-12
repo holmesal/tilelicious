@@ -1,13 +1,11 @@
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 exports.default = say;
 
-var _slackClient = require('slack-client');
-
-var _slackClient2 = _interopRequireDefault(_slackClient);
+var _client = require('@slack/client');
 
 var _log = require('../log');
 
@@ -15,26 +13,39 @@ var _log2 = _interopRequireDefault(_log);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var token = 'xoxb-16055557347-ekxqLUz7ye081QxFRp9wCLSC';
-var autoReconnect = true;
-var autoMark = true;
+var token = process.env.SLACK_TOKEN;
 
-var slack = new _slackClient2.default(token, autoReconnect, autoMark);
+console.info('slack token: ' + token);
 
-slack.on('open', function () {
-    _log2.default.info('slack opened!');
-    //log.info(slack.channels);
+var rtm = new _client.RtmClient(token, {
+  // Sets the level of logging we require
+  logLevel: 'error',
+  dataStore: new _client.MemoryDataStore(),
+  // Boolean indicating whether Slack should automatically reconnect after an error response
+  autoReconnect: true,
+  // Boolean indicating whether each message should be marked as read or not after it is processed
+  autoMark: true
 });
 
-slack.on('error', _log2.default.error);
+var channelName = 'stravahooks';
+var stravahooksChannel = null;
 
-slack.login();
+rtm.on(_client.CLIENT_EVENTS.RTM.AUTHENTICATED, function (rtmStartData) {
+  console.log('Logged in as ' + rtmStartData.self.name + ' of team ' + rtmStartData.team.name + ', but not yet connected to a channel');
+  stravahooksChannel = rtm.dataStore.getChannelOrGroupByName('stravahooks');
+});
+
+// you need to wait for the client to fully connect before you can send messages
+rtm.on(_client.CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function () {
+  // This will send the message 'this is a test message' to the channel identified by id 'C0CHZA86Q'
+  rtm.sendMessage('> blinks, confused, as sunlight streams onto his face for the first time in ages. what world is this?', stravahooksChannel.id, function messageSent() {
+    console.info('send wakup message!');
+    // optionally, you can supply a callback to execute once the message has been sent
+  });
+});
+
+rtm.start();
 
 function say(message) {
-    var channel = slack.getChannelGroupOrDMByName('stravahooks');
-    if (!channel) {
-        console.error('slack integration could not find channel "stravahooks"!!!');
-        return false;
-    }
-    channel.send(message);
+  rtm.sendMessage(message, 'stravahooks');
 }

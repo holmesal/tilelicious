@@ -89,12 +89,28 @@ var _log = require('../log');
 
 var _log2 = _interopRequireDefault(_log);
 
+var _bytes = require('bytes');
+
+var _bytes2 = _interopRequireDefault(_bytes);
+
+var _stringifyObject = require('stringify-object');
+
+var _stringifyObject2 = _interopRequireDefault(_stringifyObject);
+
+var _memwatchNext = require('memwatch-next');
+
+var _memwatchNext2 = _interopRequireDefault(_memwatchNext);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var SKIP_TILES = process.env.NODE_ENV != 'production' && false;
-var SKIP_ACTIVITIES = process.env.NODE_ENV != 'production' && true;
+var SKIP_ACTIVITIES = process.env.NODE_ENV != 'production' && false;
+
+_memwatchNext2.default.on('leak', function (info) {
+    console.info('memory leak!', info);
+});
 
 // Shim with custom text rendering function
 _canvas.Context2d.prototype.renderText = _renderText2.default;
@@ -127,6 +143,11 @@ var BORDER = 50;
 // Maximum static map size, from mapbox
 var TILE_SIZE = 256;
 
+function logMemory() {
+    var mem = process.memoryUsage();
+    console.info('memory usage: ' + (0, _bytes2.default)(mem.heapUsed) + ' / ' + (0, _bytes2.default)(mem.heapTotal));
+}
+
 var StravaMap = function () {
     function StravaMap(pixelsScreen, zScreen, bboxScreen, paperSize, theme, vectorScaleScale, uid, activities, imageLocation, text) {
         var _this = this;
@@ -145,6 +166,8 @@ var StravaMap = function () {
         this.paperSize = paperSize;
         this.imageLocation = imageLocation;
         this.text = text;
+
+        logMemory();
 
         this.startTime = Date.now();
 
@@ -728,10 +751,10 @@ var StravaMap = function () {
     }, {
         key: 'cleanup',
         value: function cleanup() {
-            _log2.default.info(_util2.default.inspect(process.memoryUsage()));
+            logMemory();
             _log2.default.info('cleaning up...');
             this.pool.destroy();
-            _log2.default.info(_util2.default.inspect(process.memoryUsage()));
+            logMemory();
         }
     }]);
 
@@ -843,15 +866,22 @@ var generatePrint = function generatePrint(data) {
                 data: data
             });
         } else {
-            var map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
-            map.complete.then(function (url) {
-                _log2.default.info('done!');
-                resolve(url);
-            }).catch(function (err) {
-                //log.error('image generation request failed, ');
-                //dumpError(err);
-                reject(err);
-            });
+            (function () {
+                var hd = new _memwatchNext2.default.HeapDiff();
+                var map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
+                map.complete.then(function (url) {
+                    var diff = hd.end();
+                    console.info('vvv heap diff ---');
+                    console.info((0, _stringifyObject2.default)(diff));
+                    resolve(url);
+                    map = null;
+                }).catch(function (err) {
+                    _log2.default.error('image generation request failed...');
+                    //dumpError(err);
+                    reject(err);
+                    map = null;
+                });
+            })();
         }
     });
 };
