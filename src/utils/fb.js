@@ -4,6 +4,14 @@ const FIREBASE_URL = 'https://stravalicious.firebaseio.com';
 
 export const rootRef = new Firebase(FIREBASE_URL);
 
+rootRef.authWithCustomToken(process.env.FIREBASE_SECRET, function(error, authData) {
+  if (error) {
+    console.log("Login Failed!", error);
+  } else {
+    console.log("Login Succeeded!", authData);
+  }
+});
+
 /**
  * Queues
  */
