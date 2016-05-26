@@ -70,7 +70,7 @@ function logMemory() {
 }
 
 class StravaMap {
-    constructor(pixelsScreen, zScreen, bboxScreen, paperSize, theme, vectorScaleScale, uid, activities, imageLocation, text) {
+    constructor(pixelsScreen, zScreen, bboxScreen, paperSize, theme, vectorScaleScale, uid, activities, imageLocation, text, taskId) {
         this.textColor = theme.textColor;
         this.copyrightTextColor = theme.copyrightTextColor;
         this.mapCreds = theme.mapCreds;
@@ -83,6 +83,7 @@ class StravaMap {
         this.paperSize = paperSize;
         this.imageLocation = imageLocation;
         this.text = text;
+        this.taskId = taskId;
 
         logMemory();
 
@@ -340,7 +341,7 @@ class StravaMap {
 
     streamToAmazonS3(stream, key, resolve, reject) {
         log.info('streaming to amazon s3!');
-        let keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'activities', 'paperSize', 'imageLocation', 'text'];
+        let keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'paperSize', 'imageLocation', 'text', 'taskId'];
         let metadata = {};
         keys.forEach(key => metadata[key] = JSON.stringify(this[key]));
         //metadata.text = _.escape(metadata.text);
@@ -663,66 +664,6 @@ let themes = {
     }
 };
 
-// light
-//let mapCreds = {
-//
-//};
-//let vectorStyle = {
-//    opacity: 0.15,
-//    stroke: '#000000',
-//    strokeWidth: 1
-//};
-
-
-
-//// For testing - this will eventually come from the frontend
-//let paperSize = 'a4';
-//let pixelsScreen = screenSizes[paperSize]; // change this so it doesn't match the paper size
-//let zScreen = 13;
-//let bboxScreen = [-122.34649658203124,37.78848836594184,-122.24349975585938,37.88745395776327];
-
-
-//let map = new StravaMap(pixelsScreen, zScreen, bboxScreen, paperSize, mapCreds.dark, vectorStyle.dark, vectorScaleScale)
-//map.complete.then(() => {
-//    log.info('promise ran!')
-//});
-
-//let set = [
-//    {theme: 'light', size: '18x24'},
-//    //{theme: 'light', size: '18x24', vectorScaleScale: 1},
-//    //{theme: 'light', size: '18x24', vectorScaleScale: 0.5},
-//    //{theme: 'light', size: '12x16'},
-//    //{theme: 'light', size: '12x16', vectorScaleScale: 1},
-//    //{theme: 'light', size: '12x16', vectorScaleScale: 0.5},
-//    //{theme: 'dark', size: '18x24'},
-//    //{theme: 'dark', size: '18x24', vectorScaleScale: 1},
-//    //{theme: 'dark', size: '18x24', vectorScaleScale: 0.5},
-//    //{theme: 'dark', size: '12x16'},
-//    //{theme: 'dark', size: '12x16', vectorScaleScale: 1},
-//    //{theme: 'dark', size: '12x16', vectorScaleScale: 0.5},
-//];
-//
-//let processSet = () => {
-//    if (set.length === 0) return false;
-//    let option = set.shift();
-//    let path = '/export/';
-//    let vectorScaleScale = option.vectorScaleScale || false;
-//    let filename = `${path}${option.size}_vectorScale=${vectorScaleScale}_${option.theme}.png`;
-//    log.info(`\n\n\nstarting ${filename}\n\n`);
-//
-//    let backgroundColor = option.theme === 'dark' ? '#202020' : '#FFFFFF'
-//
-//    let pixelsScreen = screenSizes[option.size];
-//
-//    let map = new StravaMap(screenSizes[option.size], zScreen, bboxScreen, option.size, mapCreds[option.theme], vectorStyle[option.theme], vectorScaleScale, filename, backgroundColor);
-//    map.complete.then(() => {
-//        processSet();
-//    });
-//
-//};
-
-//processSet();
-
 // TODO - make this a property of print size
 let vectorScaleScale = 0.65;
 
@@ -739,7 +680,7 @@ const generatePrint = (data) => {
             });
         } else {
             let hd = new memwatch.HeapDiff();
-            let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text);
+            let map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text, data._id);
             map.complete.then((url) => {
                 let diff = hd.end();
                 console.info('vvv heap diff ---');
@@ -757,15 +698,16 @@ const generatePrint = (data) => {
     });
 };
 
-let queue = new Queue(imageGenerationQueueRef, (data, progress, resolve, reject) => {
+let queue = new Queue(imageGenerationQueueRef, {sanitize: false}, (data, progress, resolve, reject) => {
     log.info('imageGeneration queue running for user: ', data.uid, data);
     generatePrint(data)
         .then(resolve)
         .catch((err) => {
             err.meta = data;
+            err.meta.queueUrl = `https://stravalicious.firebaseio.com/queues/imageGeneration/tasks/${data._id}`;
             dumpError(err);
             log.info('rejecting image queue!');
-            reject(err);
+            reject(JSON.stringify(err));
         })
 });
 
