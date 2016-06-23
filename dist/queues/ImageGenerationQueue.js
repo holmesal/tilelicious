@@ -166,7 +166,7 @@ var StravaMap = function () {
         this.paperSize = paperSize;
         this.imageLocation = imageLocation;
         this.text = text;
-        this.taskId = taskId;
+        this.taskId = taskId || 'unknown-task-id';
 
         logMemory();
 
@@ -455,6 +455,7 @@ var StravaMap = function () {
             keys.forEach(function (key) {
                 return metadata[key] = JSON.stringify(_this3[key]);
             });
+            _log2.default.info('s3 metadata: ', metadata);
             //metadata.text = _.escape(metadata.text);
             metadata.text = metadata.text.replace(/[^\x00-\x7F]/g, "");
             (0, _s2.default)(stream, key, metadata).then(function (details) {
@@ -463,7 +464,12 @@ var StravaMap = function () {
                 (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* _"' + _this3.text + '"_ generated in *' + elapsed + 's*!\n' + url);
                 _this3.pointFirebaseToS3(url, elapsed);
                 resolve(url);
-            }).catch(reject);
+            }).catch(function (err) {
+                reject({
+                    stage: 'uploading to s3',
+                    error: JSON.stringify(err)
+                });
+            });
         }
     }, {
         key: 'pointFirebaseToS3',
@@ -822,7 +828,7 @@ var generatePrint = function generatePrint(data) {
                     resolve(url);
                     map = null;
                 }).catch(function (err) {
-                    _log2.default.error('image generation request failed...');
+                    _log2.default.info('image generation request failed...', err);
                     //dumpError(err);
                     reject(err);
                     map = null;

@@ -83,7 +83,7 @@ class StravaMap {
         this.paperSize = paperSize;
         this.imageLocation = imageLocation;
         this.text = text;
-        this.taskId = taskId;
+        this.taskId = taskId || 'unknown-task-id';
 
         logMemory();
 
@@ -344,6 +344,7 @@ class StravaMap {
         let keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'paperSize', 'imageLocation', 'text', 'taskId'];
         let metadata = {};
         keys.forEach(key => metadata[key] = JSON.stringify(this[key]));
+        log.info('s3 metadata: ', metadata);
         //metadata.text = _.escape(metadata.text);
         metadata.text = metadata.text.replace(/[^\x00-\x7F]/g, "");
         streamToS3(stream, key, metadata).then((details) => {
@@ -352,7 +353,12 @@ class StravaMap {
             slack(`:frame_with_picture: new *${this.paperSize}* _"${this.text}"_ generated in *${elapsed}s*!\n${url}`);
             this.pointFirebaseToS3(url, elapsed);
             resolve(url);
-        }).catch(reject)
+        }).catch(err => {
+            reject({
+                stage: 'uploading to s3',
+                error: JSON.stringify(err)
+            })
+        })
     }
 
     pointFirebaseToS3(location, time) {
@@ -689,7 +695,7 @@ const generatePrint = (data) => {
                 map = null;
             })
             .catch((err) => {
-                log.error('image generation request failed...');
+                log.info('image generation request failed...', err);
                 //dumpError(err);
                 reject(err);
                 map = null;
