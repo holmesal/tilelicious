@@ -14,6 +14,8 @@ var _ImageGenerationQueue = require('./ImageGenerationQueue');
 
 var _ImageGenerationQueue2 = _interopRequireDefault(_ImageGenerationQueue);
 
+var _email = require('../utils/email');
+
 var _printful = require('../utils/printful');
 
 var _slack = require('../utils/slack');
@@ -29,7 +31,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var specs = {
     chargeCard: 'CHARGE_CARD',
     generatePrint: 'GENERATE_PRINT',
-    createOrder: 'CREATE_ORDER'
+    createOrder: 'CREATE_ORDER',
+    sendPrintGeneratedEmail: 'SEND_PRINT_GENERATED_EMAIL'
 };
 
 var STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY;
@@ -79,6 +82,17 @@ var generatePrintQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId
     generationData.imageLocation = 'orders/' + data.stripe.id + '/generatedImage';
     (0, _ImageGenerationQueue2.default)(generationData).then(function (url) {
         data.generatedImage = url;
+        resolve(data);
+    }).catch(reject);
+});
+
+// Send an email to notify the user that their print has been generated
+var sendPrintGeneratedEmailQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: specs.sendPrintGeneratedEmail }, function (data, progress, resolve, reject) {
+    // where should this image be stored?
+    var printFileUrl = data.generatedImage;
+    var customerEmail = data.createdOrder.recipient.email;
+    (0, _email.sendPrintGeneratedEmail)(customerEmail, printFileUrl).then(function (sendgridResponse) {
+        data.printGeneratedEmailSendgridResponse = sendgridResponse;
         resolve(data);
     }).catch(reject);
 });

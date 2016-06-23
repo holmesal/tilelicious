@@ -2,6 +2,7 @@ import {orderQueueRef, ordersRef, rejectedChargesRef} from '../utils/fb';
 import Queue from 'firebase-queue';
 import Stripe from 'stripe';
 import generatePrint from './ImageGenerationQueue';
+import {sendPrintGeneratedEmail} from '../utils/email';
 import {getItem, createOrder} from '../utils/printful';
 import say from '../utils/slack';
 import log from '../log';
@@ -9,7 +10,8 @@ import log from '../log';
 let specs = {
     chargeCard: 'CHARGE_CARD',
     generatePrint: 'GENERATE_PRINT',
-    createOrder: 'CREATE_ORDER'
+    createOrder: 'CREATE_ORDER',
+    sendPrintGeneratedEmail: 'SEND_PRINT_GENERATED_EMAIL'
 };
 
 let STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY;
@@ -60,6 +62,19 @@ let generatePrintQueue = new Queue(orderQueueRef, {specId: specs.generatePrint},
     generatePrint(generationData)
         .then((url) => {
             data.generatedImage = url;
+            resolve(data);
+        })
+        .catch(reject)
+});
+
+// Send an email to notify the user that their print has been generated
+let sendPrintGeneratedEmailQueue = new Queue(orderQueueRef, {specId: specs.sendPrintGeneratedEmail}, (data, progress, resolve, reject) => {
+    // where should this image be stored?
+    let printFileUrl = data.generatedImage;
+    let customerEmail = data.createdOrder.recipient.email;
+    sendPrintGeneratedEmail(customerEmail, printFileUrl)
+        .then((sendgridResponse) => {
+            data.printGeneratedEmailSendgridResponse = sendgridResponse;
             resolve(data);
         })
         .catch(reject)
