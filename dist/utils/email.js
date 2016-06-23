@@ -81,7 +81,7 @@ var sendPrintGeneratedEmail = exports.sendPrintGeneratedEmail = function sendPri
 		sg.API(request, function (res) {
 			_log2.default.info('got sendgrid response', res.statusCode, res.body);
 			if (res.statusCode == 202) {
-				resolve();
+				resolve({ code: res.statusCode, body: res.body });
 			} else {
 				reject(res.body);
 			}

@@ -72,7 +72,7 @@ export const sendPrintGeneratedEmail = (toEmail, printFileUrl) => new Promise((r
 	sg.API(request, (res) => {
 		log.info('got sendgrid response', res.statusCode, res.body);
 		if (res.statusCode == 202) {
-			resolve();
+			resolve({code: res.statusCode, body: res.body});
 		} else {
 			reject(res.body);
 		}
