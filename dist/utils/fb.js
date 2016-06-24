@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.serviceRequestsRef = exports.rejectedChargesRef = exports.ordersRef = exports.activityStreamRef = exports.userActivityRef = exports.userRef = exports.uidByCodeRef = exports.serviceRequestQueueRef = exports.orderQueueRef = exports.imageGenerationQueueRef = exports.streamNomNomQueueRef = exports.activityNomNomQueueRef = exports.tokenExchangeQueueRef = exports.queueRootRef = exports.rootRef = undefined;
+exports.serviceRequestsRef = exports.rejectedChargesRef = exports.completedOrdersRef = exports.ordersRef = exports.activityStreamRef = exports.userActivityRef = exports.userRef = exports.uidByCodeRef = exports.serviceRequestQueueRef = exports.orderQueueRef = exports.imageGenerationQueueRef = exports.streamNomNomQueueRef = exports.activityNomNomQueueRef = exports.tokenExchangeQueueRef = exports.queueRootRef = exports.rootRef = undefined;
 
 var _firebase = require('firebase');
 
@@ -61,6 +61,8 @@ var activityStreamRef = exports.activityStreamRef = function activityStreamRef(a
 };
 
 var ordersRef = exports.ordersRef = rootRef.child('orders');
+
+var completedOrdersRef = exports.completedOrdersRef = rootRef.child('completedOrders');
 
 var rejectedChargesRef = exports.rejectedChargesRef = rootRef.child('rejectedCharges');
 

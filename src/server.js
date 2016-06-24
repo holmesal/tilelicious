@@ -2,6 +2,7 @@ import {API_KEY, ENDPOINT} from './utils/printful';
 import log from './log';
 import proxy from 'express-http-proxy';
 import express from 'express';
+import bodyParser from 'body-parser';
 import url from 'url';
 import {handleWebhook} from './utils/printful';
 
@@ -36,12 +37,17 @@ app.use('/printful-proxy', proxy(ENDPOINT, {
 
 }));
 
+app.use(bodyParser.json());
+
 app.get('/', (req, res) => res.send('hiiiii'));
 
 app.post('/printful-hooks', (req, res) => {
     handleWebhook(req.body)
         .then(() => res.end('ok'))
-        .catch((err) => res.status(500).send('oh shit.'))
+        .catch((err) => {
+            log.error('error handing webhook', err);
+            res.status(500).send('oh shit.');
+        })
 });
 
 

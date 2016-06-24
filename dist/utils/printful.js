@@ -17,6 +17,8 @@ var _log = require('../log');
 
 var _log2 = _interopRequireDefault(_log);
 
+var _email = require('./email');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var API_KEY = exports.API_KEY = new Buffer(process.env.PRINTFUL_API_KEY).toString('base64');
@@ -77,14 +79,20 @@ var createOrder = exports.createOrder = function createOrder(order) {
 
 var handleWebhook = exports.handleWebhook = function handleWebhook(body) {
     return new Promise(function (resolve, reject) {
-        _log2.default.info('got webhook!', body);
+        var data = body.data;
+
+        _log2.default.info('handling printful webhook: ', JSON.stringify(body));
         if (body.type === 'package_shipped') {
-            (0, _slack2.default)(':package::truck::airplane_departure: package shipped via *' + body.shipment.carrier + '+' + body.shipment.service + '* from printful!\n\n                en route to *' + body.order.recipient.name + '* in *' + body.order.recipient.city + ', ' + body.order.recipient.state_name + ', ' + body.order.recipient.country_name + '*\n\n                track this package: ' + body.shipment.tracking_url);
+            // Send the user a shipping confirmation
+            (0, _email.sendPrintShippedEmail)(data.order.recipient.email, data.shipment.tracking_url, data.order.external_id);
+            // Let us know in slack
+            (0, _slack2.default)(':package::truck::airplane_departure: package `' + data.order.external_id + '` (printful id: `' + data.order.id + '`) shipped via *' + data.shipment.carrier + '+' + data.shipment.service + '* from printful!\n\n                en route to *' + data.order.recipient.name + '* in *' + data.order.recipient.city + ', ' + data.order.recipient.state_name + ', ' + data.order.recipient.country_name + '*\n\n                track this package: ' + data.shipment.tracking_url);
         } else if (body.type === 'order_failed') {
-            (0, _slack2.default)(':cry::poop: order failed for reason *' + body.data.reason + '*\n\n                you should probably go here and fix shit: https://www.theprintful.com/dashboard/default');
+            (0, _slack2.default)(':cry::poop: order failed for reason *' + data.reason + '*\n\n                you should probably go here and fix shit: https://www.theprintful.com/dashboard/default');
         } else if (body.type === 'order_canceled') {
-            (0, _slack2.default)(':japanese_ogre: an order to *' + body.order.recipient.name + '* was cancelled. I sure hope this was intentional');
+            (0, _slack2.default)(':japanese_ogre: an order to *' + data.order.recipient.name + '* was cancelled. I sure hope this was intentional');
         } else {
+            logger.error('I don\'t know how to handle a webhook of type: ' + data.type);
             reject();
         }
         resolve();
