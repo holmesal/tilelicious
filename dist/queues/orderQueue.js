@@ -151,7 +151,7 @@ var createOrderQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: 
         var orderRef = _fb.ordersRef.child(data.stripe.id);
         orderRef.update(data);
         // Post to slack
-        (0, _slack2.default)('\n            :printer::moneybag: new order for *' + createdOrder.recipient.name + '* in *' + createdOrder.recipient.city + ', ' + createdOrder.recipient.country_name + '* submitted to printful!\n\n                cost: ' + createdOrder.costs.total + '    retail: ' + createdOrder.retail_costs.total + '    *profit: ' + (parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)) + '*\n\n                1. Go here to check the print: ' + data.generatedImage + '\n\n                2. Then, go here to ship the order: https://www.theprintful.com/dashboard/default\n            ', true);
+        (0, _slack2.default)('\n            :printer::moneybag: new order for *' + createdOrder.recipient.name + '* in *' + createdOrder.recipient.city + ', ' + createdOrder.recipient.country_name + '* submitted to printful!\n\n                cost: ' + createdOrder.costs.total + '    retail: ' + createdOrder.retail_costs.total + '    *profit: ' + (parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)) + '*\n\n                :mag: Go here to check the print image for issues: ' + data.generatedImage + '\n\n                :flag-ng: Then, go here to make sure the card charge succeeded https://dashboard.stripe.com/test/payments/' + data.charge.id + '\n                :truck: Finally, go here to ship order `' + data.stripe.id + '`: https://www.theprintful.com/dashboard/default\n            ', true);
         resolve(data);
     }).catch(reject);
 });
