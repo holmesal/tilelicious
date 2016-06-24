@@ -61,7 +61,6 @@ app.get('/', function (req, res) {
 });
 
 app.post('/printful-hooks', function (req, res) {
-    console.info(req);
     (0, _printful.handleWebhook)(req.body).then(function () {
         return res.end('ok');
     }).catch(function (err) {

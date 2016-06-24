@@ -32,7 +32,8 @@ var specs = {
     chargeCard: 'CHARGE_CARD',
     generatePrint: 'GENERATE_PRINT',
     createOrder: 'CREATE_ORDER',
-    sendPrintGeneratedEmail: 'SEND_PRINT_GENERATED_EMAIL'
+    sendPrintGeneratedEmail: 'SEND_PRINT_GENERATED_EMAIL',
+    storeCompletedOrder: 'STORE_COMPLETED_ORDER'
 };
 
 var STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY;
@@ -95,6 +96,12 @@ var sendPrintGeneratedEmailQueue = new _firebaseQueue2.default(_fb.orderQueueRef
         data.printGeneratedEmailSendgridResponse = sendgridResponse;
         resolve(data);
     }).catch(reject);
+});
+
+// Store the completed order somewhere for future reference
+var storeCompletedOrderQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: specs.storeCompletedOrder }, function (data, progress, resolve, reject) {
+    _fb.completedOrdersRef.child(data.stripe.id).set(data);
+    resolve();
 });
 
 // Create a printful order

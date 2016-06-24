@@ -65,7 +65,7 @@ export const createOrder = (order) => {
 export const handleWebhook = (body) => {
     return new Promise((resolve, reject) => {
         const {data} = body;
-        log.info(body);
+        log.info('handling printful webhook: ', JSON.stringify(body));
         if (body.type === 'package_shipped') {
             // Send the user a shipping confirmation
             sendPrintShippedEmail(data.order.recipient.email, data.shipment.tracking_url, data.order.external_id);
@@ -79,6 +79,7 @@ export const handleWebhook = (body) => {
         } else if (body.type === 'order_canceled') {
             say(`:japanese_ogre: an order to *${data.order.recipient.name}* was cancelled. I sure hope this was intentional`);
         } else {
+            logger.error(`I don't know how to handle a webhook of type: ${data.type}`);
             reject();
         }
         resolve();

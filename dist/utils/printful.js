@@ -81,7 +81,7 @@ var handleWebhook = exports.handleWebhook = function handleWebhook(body) {
     return new Promise(function (resolve, reject) {
         var data = body.data;
 
-        _log2.default.info(body);
+        _log2.default.info('handling printful webhook: ', JSON.stringify(body));
         if (body.type === 'package_shipped') {
             // Send the user a shipping confirmation
             (0, _email.sendPrintShippedEmail)(data.order.recipient.email, data.shipment.tracking_url, data.order.external_id);
@@ -92,6 +92,7 @@ var handleWebhook = exports.handleWebhook = function handleWebhook(body) {
         } else if (body.type === 'order_canceled') {
             (0, _slack2.default)(':japanese_ogre: an order to *' + data.order.recipient.name + '* was cancelled. I sure hope this was intentional');
         } else {
+            logger.error('I don\'t know how to handle a webhook of type: ' + data.type);
             reject();
         }
         resolve();

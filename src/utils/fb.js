@@ -44,6 +44,8 @@ export const activityStreamRef = (activityId) => rootRef.child(`streamByActivity
 
 export const ordersRef = rootRef.child(`orders`);
 
+export const completedOrdersRef = rootRef.child('completedOrders');
+
 export const rejectedChargesRef = rootRef.child(`rejectedCharges`);
 
 export const serviceRequestsRef = rootRef.child(`serviceRequests`);

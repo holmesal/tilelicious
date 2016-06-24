@@ -1,4 +1,4 @@
-import {orderQueueRef, ordersRef, rejectedChargesRef} from '../utils/fb';
+import {orderQueueRef, ordersRef, rejectedChargesRef, completedOrdersRef} from '../utils/fb';
 import Queue from 'firebase-queue';
 import Stripe from 'stripe';
 import generatePrint from './ImageGenerationQueue';
@@ -11,7 +11,8 @@ let specs = {
     chargeCard: 'CHARGE_CARD',
     generatePrint: 'GENERATE_PRINT',
     createOrder: 'CREATE_ORDER',
-    sendPrintGeneratedEmail: 'SEND_PRINT_GENERATED_EMAIL'
+    sendPrintGeneratedEmail: 'SEND_PRINT_GENERATED_EMAIL',
+    storeCompletedOrder: 'STORE_COMPLETED_ORDER'
 };
 
 let STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY;
@@ -78,6 +79,12 @@ let sendPrintGeneratedEmailQueue = new Queue(orderQueueRef, {specId: specs.sendP
             resolve(data);
         })
         .catch(reject)
+});
+
+// Store the completed order somewhere for future reference
+let storeCompletedOrderQueue = new Queue(orderQueueRef, {specId: specs.storeCompletedOrder}, (data, progress, resolve, reject) => {
+    completedOrdersRef.child(data.stripe.id).set(data);
+    resolve();
 });
 
 // Create a printful order

@@ -42,7 +42,6 @@ app.use(bodyParser.json());
 app.get('/', (req, res) => res.send('hiiiii'));
 
 app.post('/printful-hooks', (req, res) => {
-    console.info(req)
     handleWebhook(req.body)
         .then(() => res.end('ok'))
         .catch((err) => {
