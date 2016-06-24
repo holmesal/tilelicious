@@ -151,7 +151,7 @@ var createOrderQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: 
         var orderRef = _fb.ordersRef.child(data.stripe.id);
         orderRef.update(data);
         // Post to slack
-        (0, _slack2.default)(':printer::moneybag: new order for *' + createdOrder.recipient.name + '* in *' + createdOrder.recipient.city + ', ' + createdOrder.recipient.country_name + '* submitted to printful!\n\n                cost: ' + createdOrder.costs.total + '    retail: ' + createdOrder.retail_costs.total + '    *profit: ' + (parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)) + '*\n\n                go here to confirm: https://www.theprintful.com/dashboard/default');
+        (0, _slack2.default)(':printer::moneybag: new order for *' + createdOrder.recipient.name + '* in *' + createdOrder.recipient.city + ', ' + createdOrder.recipient.country_name + '* submitted to printful!\n\n                cost: ' + createdOrder.costs.total + '    retail: ' + createdOrder.retail_costs.total + '    *profit: ' + (parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)) + '*\n\n                go here to confirm: https://www.theprintful.com/dashboard/default', true);
         resolve(data);
     }).catch(reject);
 });

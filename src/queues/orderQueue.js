@@ -129,7 +129,7 @@ let createOrderQueue = new Queue(orderQueueRef, {specId: specs.createOrder}, (da
             // Post to slack
             say(`:printer::moneybag: new order for *${createdOrder.recipient.name}* in *${createdOrder.recipient.city}, ${createdOrder.recipient.country_name}* submitted to printful!\n
                 cost: ${createdOrder.costs.total}    retail: ${createdOrder.retail_costs.total}    *profit: ${parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)}*\n
-                go here to confirm: https://www.theprintful.com/dashboard/default`);
+                go here to confirm: https://www.theprintful.com/dashboard/default`, true);
             resolve(data);
         })
         .catch(reject);

@@ -16,14 +16,15 @@ const rtm = new RtmClient(token, {
   autoMark: true
 });
 
-const channelName = 'stravahooks';
-let stravahooksChannel = null;
+let mainChannel = null;
+let hooksChannel = null;
 
 let hasSentWakeup = false;
 
 rtm.on(CLIENT_EVENTS.RTM.AUTHENTICATED, function (rtmStartData) {
 	console.log(`Logged in as ${rtmStartData.self.name} of team ${rtmStartData.team.name}, but not yet connected to a channel`);
-	stravahooksChannel = rtm.dataStore.getChannelOrGroupByName('stravahooks');
+	hooksChannel = rtm.dataStore.getChannelOrGroupByName('victories-hooks');
+	mainChannel = rtm.dataStore.getChannelOrGroupByName('victories');
 });
 
 // you need to wait for the client to fully connect before you can send messages
@@ -33,7 +34,7 @@ rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function () {
     let message = `:sun_with_face: new *${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'}* Victories server started!`;
     if (process.env.WORKER) message += '\n :robot_face: It\'s a worker!';
     say(message);
-    rtm.sendMessage(message, stravahooksChannel.id, function messageSent() {
+    rtm.sendMessage(message, hooksChannel.id, function messageSent() {
       console.info('sent slack wakeup message!');
       // optionally, you can supply a callback to execute once the message has been sent
     });
@@ -43,9 +44,10 @@ rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function () {
 
 rtm.start();
 
-export default function say(message) {
+export default function say(message, sendToMainChannel=false) {
     try {
-      rtm.sendMessage(message, stravahooksChannel.id);
+      rtm.sendMessage(message, hooksChannel.id);
+      if (sendToMainChannel) rtm.sendMessage(message, mainChannel.id);
     } catch(err) {
       log.error('error posting message in slack', err);
     }
