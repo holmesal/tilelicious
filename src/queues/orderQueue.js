@@ -127,11 +127,12 @@ let createOrderQueue = new Queue(orderQueueRef, {specId: specs.createOrder}, (da
             let orderRef = ordersRef.child(data.stripe.id);
             orderRef.update(data);
             // Post to slack
+            const chargeUrl = `https://dashboard.stripe.com/${data.charge.livemode ? '' : 'test/'}payments/${data.charge.id}`;
             say(`
             :printer::moneybag: new order for *${createdOrder.recipient.name}* in *${createdOrder.recipient.city}, ${createdOrder.recipient.country_name}* submitted to printful!\n
                 cost: ${createdOrder.costs.total}    retail: ${createdOrder.retail_costs.total}    *profit: ${parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)}*\n
                 :mag: Go here to check the print image for issues: ${data.generatedImage}\n
-                :flag-ng: Then, go here to make sure the card charge succeeded https://dashboard.stripe.com/test/payments/${data.charge.id}
+                :flag-ng: Then, go here to make sure the card charge succeeded ${chargeUrl}
                 :truck: Finally, go here to ship order \`${data.stripe.id}\`: https://www.theprintful.com/dashboard/default
             `, true);
             resolve(data);
