@@ -28,7 +28,7 @@ rtm.on(CLIENT_EVENTS.RTM.AUTHENTICATED, function (rtmStartData) {
 rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function () {
   // This will send the message 'this is a test message' to the channel identified by id 'C0CHZA86Q'
   rtm.sendMessage('> blinks, confused, as sunlight streams onto his face for the first time in ages. what world is this?', stravahooksChannel.id, function messageSent() {
-  	console.info('send wakup message!')
+  	console.info('sent wakeup message!')
     // optionally, you can supply a callback to execute once the message has been sent
   });
 });
@@ -36,5 +36,9 @@ rtm.on(CLIENT_EVENTS.RTM.RTM_CONNECTION_OPENED, function () {
 rtm.start();
 
 export default function say(message) {
-    rtm.sendMessage(message, stravahooksChannel.id);
+    try {
+      rtm.sendMessage(message, stravahooksChannel.id);
+    } catch(err) {
+      log.error('error posting message in slack', err);
+    }
 }

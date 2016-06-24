@@ -91,7 +91,7 @@ var sendPrintGeneratedEmailQueue = new _firebaseQueue2.default(_fb.orderQueueRef
     // where should this image be stored?
     var printFileUrl = data.generatedImage;
     var customerEmail = data.createdOrder.recipient.email;
-    (0, _email.sendPrintGeneratedEmail)(customerEmail, printFileUrl).then(function (sendgridResponse) {
+    (0, _email.sendPrintGeneratedEmail)(customerEmail, printFileUrl, data.createdOrder.external_id).then(function (sendgridResponse) {
         data.printGeneratedEmailSendgridResponse = sendgridResponse;
         resolve(data);
     }).catch(reject);

@@ -14,6 +14,10 @@ var _express = require('express');
 
 var _express2 = _interopRequireDefault(_express);
 
+var _bodyParser = require('body-parser');
+
+var _bodyParser2 = _interopRequireDefault(_bodyParser);
+
 var _url = require('url');
 
 var _url2 = _interopRequireDefault(_url);
@@ -50,15 +54,19 @@ app.use('/printful-proxy', (0, _expressHttpProxy2.default)(_printful.ENDPOINT, {
 
 }));
 
+app.use(_bodyParser2.default.json());
+
 app.get('/', function (req, res) {
     return res.send('hiiiii');
 });
 
 app.post('/printful-hooks', function (req, res) {
+    console.info(req);
     (0, _printful.handleWebhook)(req.body).then(function () {
         return res.end('ok');
     }).catch(function (err) {
-        return res.status(500).send('oh shit.');
+        _log2.default.error('error handing webhook', err);
+        res.status(500).send('oh shit.');
     });
 });
 

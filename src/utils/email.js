@@ -1,47 +1,3 @@
-// import Sendgrid from 'sendgrid';
-// import log from '../log';
-
-// const sendgrid = Sendgrid(process.env.SENDGRID_USERNAME, process.env.SENDGRID_PASSWORD);
-
-// const from = 'victories@mtnlab.io';
-
-// export const sendPrintGeneratedEmail = (to, printFileUrl) => new Promise((resolve, reject) => {
-
-// 	log.info(`Sending print generated email to <${to}> with print file URL: ${printFileUrl}`);
-
-// 	sendgrid.send({
-// 		to,
-// 		from,
-// 		subject: 'Check out your new Victories print!',
-// 		message: `
-// 			Thanks for ordering a Victories print!
-
-// 			We're currently printing your rides, and your print will be in the mail in 1-2 days.
-
-// 			In the meantime, we thought you might like a copy of your super-high-resolution print file. You can view/download your print file here:
-
-// 			${printFileUrl}
-
-// 			Enjoy your Victories!
-
-// 			- Alonso and Matt
-// 			@victoriesco
-// 		`
-// 	}, (err, json) => {
-// 		if (err) {
-// 			log.error(err);
-// 			reject(err);
-// 			return;
-// 		}
-// 		log.info(json);
-// 		resolve(json);
-// 	})
-
-// });
-
-
-
-// import { mail, SendGrid } from 'sendgrid';
 import log from '../log';
 
 const helper = require('sendgrid').mail;
@@ -50,21 +6,7 @@ const sg = require('sendgrid').SendGrid(process.env.SENDGRID_API_KEY);
 
 let from = new helper.Email('victories@mtnlab.io', 'Victories');
 
-export const sendPrintGeneratedEmail = (toEmail, printFileUrl) => new Promise((resolve, reject) => {
-
-	log.info(`Sending print generated email to <${toEmail}> with print file URL: ${printFileUrl}`);
-
-	const to = new helper.Email(toEmail);
-	const subject = 'Check out your new Victories print!';
-
-	let message = new helper.Mail(from, subject, to, {type: 'text/html', value: 'test'}, process.env.SENDGRID_API_KEY);
-	// console.info('got this far!', message);
-	message.setReplyTo(from);
-	message.setTemplateId('84a8a740-fd22-4b36-b84a-b350add22103');
-
-	const printUrl = new helper.Substitution('%print-url%', printFileUrl);
-	message.getPersonalizations()[0].addSubstitution(printUrl);
-
+const sendMessage = message => new Promise((resolve, reject) => {
 	let request = sg.emptyRequest();
 	request.method = 'POST';
 	request.path = '/v3/mail/send';
@@ -77,8 +19,42 @@ export const sendPrintGeneratedEmail = (toEmail, printFileUrl) => new Promise((r
 			reject(res.body);
 		}
 	})
-
 });
 
+export const sendPrintGeneratedEmail = (toEmail, printFileUrl, orderNumber) => {
+	log.info(`Sending print generated email to <${toEmail}> with print file URL: ${printFileUrl}`);
 
-// sendPrintGeneratedEmail('siralonsoholmes@gmail.com', 'https://stravalicious.s3.amazonaws.com/8657205-preview-1464752676002.png').catch(console.error)
+	const to = new helper.Email(toEmail);
+	const subject = 'Check out your new Victories print!';
+
+	let message = new helper.Mail(from, subject, to, {type: 'text/html', value: 'test'}, process.env.SENDGRID_API_KEY);
+	message.setReplyTo(from);
+	message.setTemplateId('84a8a740-fd22-4b36-b84a-b350add22103');
+
+	const printSub = new helper.Substitution('%print-url%', printFileUrl);
+	message.getPersonalizations()[0].addSubstitution(printSub);
+
+	const orderNumberSub = new helper.Substitution('%order-number%', orderNumber);
+	message.getPersonalizations()[0].addSubstitution(orderNumberSub);
+
+	return sendMessage(message)
+};
+
+export const sendPrintShippedEmail = (toEmail, trackingUrl, orderNumber) => new Promise((resolve, reject) => {
+	log.info(`Sending print shipped generated email to <${toEmail}> with tracking URL: ${trackingUrl}`);
+
+	const to = new helper.Email(toEmail);
+	const subject = 'Your Victories print is in the mail!';
+
+	let message = new helper.Mail(from, subject, to, {type: 'text/html', value: 'test'}, process.env.SENDGRID_API_KEY);
+	message.setReplyTo(from);
+	message.setTemplateId('87dc1d21-e718-41f7-8a40-287eb6859607');
+
+	const trackingSub = new helper.Substitution('%tracking-url%', trackingUrl);
+	message.getPersonalizations()[0].addSubstitution(trackingSub);
+
+	const orderNumberSub = new helper.Substitution('%order-number%', orderNumber);
+	message.getPersonalizations()[0].addSubstitution(orderNumberSub);
+
+	return sendMessage(message);
+});

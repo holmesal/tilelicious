@@ -72,7 +72,7 @@ let sendPrintGeneratedEmailQueue = new Queue(orderQueueRef, {specId: specs.sendP
     // where should this image be stored?
     let printFileUrl = data.generatedImage;
     let customerEmail = data.createdOrder.recipient.email;
-    sendPrintGeneratedEmail(customerEmail, printFileUrl)
+    sendPrintGeneratedEmail(customerEmail, printFileUrl, data.createdOrder.external_id)
         .then((sendgridResponse) => {
             data.printGeneratedEmailSendgridResponse = sendgridResponse;
             resolve(data);

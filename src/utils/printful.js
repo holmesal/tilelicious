@@ -3,6 +3,7 @@ export const ENDPOINT = 'http://api.theprintful.com';
 import request from 'superagent';
 import say from './slack';
 import log from '../log';
+import { sendPrintShippedEmail } from './email';
 
 export const items = {
     '12x16': {
@@ -63,16 +64,20 @@ export const createOrder = (order) => {
 
 export const handleWebhook = (body) => {
     return new Promise((resolve, reject) => {
-        log.info('got webhook!', body);
+        const {data} = body;
+        log.info(body);
         if (body.type === 'package_shipped') {
-            say(`:package::truck::airplane_departure: package shipped via *${body.shipment.carrier}+${body.shipment.service}* from printful!\n
-                en route to *${body.order.recipient.name}* in *${body.order.recipient.city}, ${body.order.recipient.state_name}, ${body.order.recipient.country_name}*\n
-                track this package: ${body.shipment.tracking_url}`);
+            // Send the user a shipping confirmation
+            sendPrintShippedEmail(data.order.recipient.email, data.shipment.tracking_url, data.order.external_id);
+            // Let us know in slack
+            say(`:package::truck::airplane_departure: package \`${data.order.external_id}\` (printful id: \`${data.order.id}\`) shipped via *${data.shipment.carrier}+${data.shipment.service}* from printful!\n
+                en route to *${data.order.recipient.name}* in *${data.order.recipient.city}, ${data.order.recipient.state_name}, ${data.order.recipient.country_name}*\n
+                track this package: ${data.shipment.tracking_url}`);
         } else if (body.type === 'order_failed') {
-            say(`:cry::poop: order failed for reason *${body.data.reason}*\n
+            say(`:cry::poop: order failed for reason *${data.reason}*\n
                 you should probably go here and fix shit: https://www.theprintful.com/dashboard/default`);
         } else if (body.type === 'order_canceled') {
-            say(`:japanese_ogre: an order to *${body.order.recipient.name}* was cancelled. I sure hope this was intentional`);
+            say(`:japanese_ogre: an order to *${data.order.recipient.name}* was cancelled. I sure hope this was intentional`);
         } else {
             reject();
         }
