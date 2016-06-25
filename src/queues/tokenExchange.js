@@ -2,6 +2,7 @@ import {tokenExchangeQueueRef, uidByCodeRef, userRef, activityNomNomQueueRef} fr
 import Queue from 'firebase-queue';
 import strava from 'strava-v3';
 import log from '../log';
+import {associateAthleteData} from '../utils/analytics';
 
 log.info('token exchange queue up and running!');
 
@@ -26,6 +27,8 @@ let queue = new Queue(tokenExchangeQueueRef, (data, progress, resolve, reject) =
             activityNomNomQueueRef.child('tasks').push({uid})
             // Done
             resolve();
+            // Track
+            associateAthleteData(uid, athlete)
         }
     });
 });

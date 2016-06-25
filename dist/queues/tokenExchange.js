@@ -14,6 +14,8 @@ var _log = require('../log');
 
 var _log2 = _interopRequireDefault(_log);
 
+var _analytics = require('../utils/analytics');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 _log2.default.info('token exchange queue up and running!');
@@ -41,6 +43,8 @@ var queue = new _firebaseQueue2.default(_fb.tokenExchangeQueueRef, function (dat
             _fb.activityNomNomQueueRef.child('tasks').push({ uid: uid });
             // Done
             resolve();
+            // Track
+            (0, _analytics.associateAthleteData)(uid, athlete);
         }
     });
 });

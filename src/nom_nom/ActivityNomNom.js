@@ -5,6 +5,7 @@ import StreamNomNom from './StreamNomNom';
 import Queue from 'firebase-queue';
 import log from '../log';
 import slack from '../utils/slack';
+import {trackActivityCount} from '../utils/analytics';
 
 const PER_PAGE = 200;
 
@@ -36,6 +37,7 @@ class ActivityNomNom {
 
     fetchActivities(page = 1) {
         log.info(`fetching activities page ${page} for athlete ${this.uid}`);
+        let activityCount = 0;
         strava.athlete.listActivities({
             per_page: PER_PAGE,
             page: page,
@@ -58,6 +60,7 @@ class ActivityNomNom {
                     log.info(`got ${activities.length} activities, starting with id: ${activities[0].id}`);
                     // Save these activities to firebase
                     this.pushActivitiesToFirebase(activities);
+                    activityCount += activities.length;
                     if (activities.length === PER_PAGE) {
                         let nextPage = page + 1;
                         log.info('page is ', page, ' next page is ', nextPage);
@@ -65,6 +68,7 @@ class ActivityNomNom {
                     } else {
                         log.info('done fetching activities');
                         this.resolve();
+                        trackActivityCount(this.uid, activityCount);
                     }
                 } else {
                     log.info(`user ${this.uid} had no activities`);

@@ -28,6 +28,8 @@ var _slack = require('../utils/slack');
 
 var _slack2 = _interopRequireDefault(_slack);
 
+var _analytics = require('../utils/analytics');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -70,6 +72,7 @@ var ActivityNomNom = function () {
             var page = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
 
             _log2.default.info('fetching activities page ' + page + ' for athlete ' + this.uid);
+            var activityCount = 0;
             _stravaV2.default.athlete.listActivities({
                 per_page: PER_PAGE,
                 page: page,
@@ -92,6 +95,7 @@ var ActivityNomNom = function () {
                         _log2.default.info('got ' + activities.length + ' activities, starting with id: ' + activities[0].id);
                         // Save these activities to firebase
                         _this2.pushActivitiesToFirebase(activities);
+                        activityCount += activities.length;
                         if (activities.length === PER_PAGE) {
                             var nextPage = page + 1;
                             _log2.default.info('page is ', page, ' next page is ', nextPage);
@@ -99,6 +103,7 @@ var ActivityNomNom = function () {
                         } else {
                             _log2.default.info('done fetching activities');
                             _this2.resolve();
+                            (0, _analytics.trackActivityCount)(_this2.uid, activityCount);
                         }
                     } else {
                         _log2.default.info('user ' + _this2.uid + ' had no activities');
