@@ -411,17 +411,17 @@ var StravaMap = function () {
         value: function generateShareImage(printCanvas) {
             var SHARE_DIMENSIONS = {
                 image: {
-                    width: 750,
-                    height: 750
+                    width: 1080,
+                    height: 1080
                 },
                 print: {
-                    width: 517,
-                    height: 690
+                    width: 745,
+                    height: 998
                 },
                 backdropPath: '/../../images/sharable_backdrop.png',
                 printTopLeft: {
-                    x: 115,
-                    y: 27
+                    x: 166,
+                    y: 39
                 }
             };
 
