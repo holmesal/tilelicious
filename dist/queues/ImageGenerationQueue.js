@@ -1,5 +1,7 @@
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 //import latLngToTileXY from './tileUtils';
 
@@ -161,6 +163,7 @@ var StravaMap = function () {
         this.vectorStyle = theme.vectorStyle;
         this.vectorScaleScale = vectorScaleScale;
         this.uid = uid;
+        this.paperSize = paperSize;
         this.backgroundColor = theme.backgroundColor;
         this.activities = activities;
         this.paperSize = paperSize;
@@ -182,7 +185,7 @@ var StravaMap = function () {
         this.bbox = bboxScreen;
 
         // Get the pixel dimensions to print at this paper size
-        this.pixelsPrint = (0, _sizes.getDims)(paperSize);
+        this.pixelsPrint = (0, _sizes.getDims)(this.paperSize);
         // Calc some useful dimensions
         this.calcPixels();
         _log2.default.info(paperSize, this.pixelsPrint);
@@ -369,13 +372,80 @@ var StravaMap = function () {
                     var stream = _this2.canvas.pngStream();
 
                     // Create a unique key for this upload
-                    var key = _this2.uid + '-' + _this2.paperSize + '-' + Date.now() + '.png';
+                    var key = _this2.uid + '-' + _this2.paperSize + '-' + Date.now();
+                    var path = key + '.png';
 
                     // Render to the local filesystem
-                    //this.streamToLocalFS(stream, key, resolve, reject);
+                    //this.streamToLocalFS(stream, key).then(resolve).catch(reject);
 
                     // Upload to amazon s3
-                    _this2.streamToAmazonS3(stream, key, resolve, reject);
+                    _this2.streamToAmazonS3(stream, path).then(function (res) {
+                        // If this is a preview, we also need to generate and upload a "shareable" image
+                        if (_this2.paperSize === 'preview') {
+                            var _ret = function () {
+                                var shareKey = key + '-share.png';
+                                return {
+                                    v: _this2.generateShareImage(_this2.canvas).then(function (shareCanvas) {
+                                        return _this2.streamToAmazonS3(shareCanvas.pngStream(), shareKey, true).then(function (_) {
+                                            console.info('done with s3 upload of share image!');
+                                            resolve(res);
+                                        }).catch(reject);
+                                    }).catch(reject)
+                                };
+                            }();
+
+                            if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+                        } else {
+                            // If this isn't a preview image, just resolve immediately
+                            resolve(res);
+                        }
+                    }).catch(reject);
+                });
+            });
+        }
+
+        // Takes in the print buffer, and returns a canvas for the share image
+
+    }, {
+        key: 'generateShareImage',
+        value: function generateShareImage(printCanvas) {
+            var SHARE_DIMENSIONS = {
+                image: {
+                    width: 750,
+                    height: 750
+                },
+                print: {
+                    width: 517,
+                    height: 690
+                },
+                backdropPath: '/../../images/sharable_backdrop.png',
+                printTopLeft: {
+                    x: 115,
+                    y: 27
+                }
+            };
+
+            return new Promise(function (resolve, reject) {
+                _fs2.default.readFile(__dirname + SHARE_DIMENSIONS.backdropPath, function (err, backdropFile) {
+                    if (err) {
+                        console.error('error reading sharable_backdrop image', err);
+                        reject(err);
+                        return;
+                    }
+                    // Create a new canvas instance
+                    var canvas = new _canvas2.default(SHARE_DIMENSIONS.image.width, SHARE_DIMENSIONS.image.height);
+                    var ctx = canvas.getContext('2d');
+
+                    // Draw the backdrop
+                    var backdrop = new _canvas.Image();
+                    backdrop.src = backdropFile;
+                    ctx.drawImage(backdrop, 0, 0, SHARE_DIMENSIONS.image.width, SHARE_DIMENSIONS.image.height);
+
+                    // Draw onto the backdrop
+                    ctx.drawImage(printCanvas, SHARE_DIMENSIONS.printTopLeft.x, SHARE_DIMENSIONS.printTopLeft.y, SHARE_DIMENSIONS.print.width, SHARE_DIMENSIONS.print.height);
+
+                    // Return the canvas
+                    resolve(canvas);
                 });
             });
         }
@@ -432,42 +502,53 @@ var StravaMap = function () {
         }
     }, {
         key: 'streamToLocalFS',
-        value: function streamToLocalFS(stream, key, resolve, reject) {
-            _log2.default.info('rendering to local filesystem!');
-            var out = _fs2.default.createWriteStream(__dirname + 'renders/' + key);
-            stream.on('data', function (chunk) {
-                out.write(chunk);
-            });
+        value: function streamToLocalFS(stream, key) {
+            return new Promise(function (resolve, reject) {
+                _log2.default.info('rendering to local filesystem!');
+                var out = _fs2.default.createWriteStream(__dirname + 'renders/' + key);
+                stream.on('data', function (chunk) {
+                    out.write(chunk);
+                });
 
-            stream.on('end', function () {
-                _log2.default.info('saved png');
-                resolve();
+                stream.on('end', function () {
+                    _log2.default.info('saved png');
+                    resolve();
+                });
             });
         }
     }, {
         key: 'streamToAmazonS3',
-        value: function streamToAmazonS3(stream, key, resolve, reject) {
+        value: function streamToAmazonS3(stream, key) {
             var _this3 = this;
 
-            _log2.default.info('streaming to amazon s3!');
-            var keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'paperSize', 'imageLocation', 'text', 'taskId'];
-            var metadata = {};
-            keys.forEach(function (key) {
-                return metadata[key] = JSON.stringify(_this3[key]);
-            });
-            _log2.default.info('s3 metadata: ', metadata);
-            //metadata.text = _.escape(metadata.text);
-            metadata.text = metadata.text.replace(/[^\x00-\x7F]/g, "");
-            (0, _s2.default)(stream, key, metadata).then(function (details) {
-                var elapsed = Math.round((Date.now() - _this3.startTime) / 100) / 10;
-                var url = details.Location;
-                (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* _"' + _this3.text + '"_ generated in *' + elapsed + 's*!\n' + url);
-                _this3.pointFirebaseToS3(url, elapsed);
-                resolve(url);
-            }).catch(function (err) {
-                reject({
-                    stage: 'uploading to s3',
-                    error: JSON.stringify(err)
+            var isShare = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+
+            return new Promise(function (resolve, reject) {
+                _log2.default.info('streaming to amazon s3: ', key);
+                var keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'paperSize', 'imageLocation', 'text', 'taskId'];
+                var metadata = {};
+                keys.forEach(function (key) {
+                    return metadata[key] = JSON.stringify(_this3[key]);
+                });
+                _log2.default.info('s3 metadata: ', metadata);
+                //metadata.text = _.escape(metadata.text);
+                metadata.text = metadata.text.replace(/[^\x00-\x7F]/g, "");
+                (0, _s2.default)(stream, key, metadata).then(function (details) {
+                    var elapsed = Math.round((Date.now() - _this3.startTime) / 100) / 10;
+                    var url = details.Location;
+                    if (isShare) {
+                        (0, _slack2.default)(url);
+                    } else {
+                        (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* _"' + _this3.text + '"_ generated in *' + elapsed + 's*!');
+                        _this3.pointFirebaseToS3(url, elapsed);
+                    }
+                    resolve(url);
+                }).catch(function (err) {
+                    console.error('error streaming to s3: ', err);
+                    reject({
+                        stage: 'uploading to s3',
+                        error: JSON.stringify(err)
+                    });
                 });
             });
         }

@@ -40,6 +40,7 @@ function streamToS3(stream, key, metadata) {
 
         // Handle errors.
         upload.on('error', function (error) {
+            console.error('OMG ERROR IN S3', error);
             reject({
                 stage: 'uploading image to s3',
                 error: error
@@ -66,6 +67,8 @@ function streamToS3(stream, key, metadata) {
             _log2.default.info('s3 upload complete', details);
             resolve(details);
         });
+
+        console.info('beginning stream!');
 
         stream.pipe(upload);
     });
