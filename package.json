@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "babel src --out-dir dist",
-    "old-watch": "babel src --watch --out-dir dist",
+    "watch": "babel src --watch --out-dir dist",
     "not-hooked-up-new-watch": "babel-watch -w src index.js ",
-    "run": "nodemon index.js",
+    "start": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "babel-node": "babel-node --stage 0 --ignore='foo|bar|baz'"
   },
@@ -28,6 +28,7 @@
     "geo-viewport": "^0.1.1",
     "geojson": "^0.2.1",
     "geojson-mapnikify": "^0.6.1",
+    "goo.gl": "^0.1.4",
     "http-proxy": "^1.12.0",
     "jsdom": "^7.1.0",
     "limiter": "^1.1.0",

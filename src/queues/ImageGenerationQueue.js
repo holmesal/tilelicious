@@ -23,6 +23,7 @@ import dumpError from '../utils/errors';
 import log from '../log';
 import bytes from 'bytes'
 import stringifyObject from 'stringify-object';
+import shortlink from '../utils/shortlink';
 
 import memwatch from 'memwatch-next';
 
@@ -291,11 +292,15 @@ class StravaMap {
                             const shareKey = `${key}-share.png`;
                             return this.generateShareImage(this.canvas).then(shareCanvas => {
                                 return this.streamToAmazonS3(shareCanvas.pngStream(), shareKey, true)
-                                        .then(_ => {
+                                        .then(url => {
                                             console.info('done with s3 upload of share image!');
-                                            resolve(res);
-                                        })
-                                        .catch(reject)
+                                            return shortlink.shorten(url)
+                                                .then(short => {
+                                                    console.info(`shortened url ${url} ---> ${short}`)
+                                                    this.addShareImage(url, short);
+                                                    resolve(res);
+                                                }).catch(reject)
+                                        }).catch(reject)
                             }).catch(reject);
                         } else {
                             // If this isn't a preview image, just resolve immediately
@@ -442,6 +447,14 @@ class StravaMap {
         } else {
             log.info('no complete firebase location provided');
         }
+    }
+
+    addShareImage(url, short) {
+        const completedImageRef = rootRef.child(this.imageLocation);
+        completedImageRef.update({
+            sharableImage: url,
+            sharableShort: short
+        });
     }
 
     fetchMapboxImages() {
@@ -761,7 +774,7 @@ const generatePrint = (data) => {
             map.complete.then((url) => {
                 let diff = hd.end();
                 console.info('vvv heap diff ---');
-                console.info(stringifyObject(diff));
+                console.info(stringifyObject(_.pick(diff, 'before', 'after')));
                 resolve(url);
                 map = null;
             })

@@ -99,6 +99,10 @@ var _stringifyObject = require('stringify-object');
 
 var _stringifyObject2 = _interopRequireDefault(_stringifyObject);
 
+var _shortlink = require('../utils/shortlink');
+
+var _shortlink2 = _interopRequireDefault(_shortlink);
+
 var _memwatchNext = require('memwatch-next');
 
 var _memwatchNext2 = _interopRequireDefault(_memwatchNext);
@@ -386,9 +390,13 @@ var StravaMap = function () {
                                 var shareKey = key + '-share.png';
                                 return {
                                     v: _this2.generateShareImage(_this2.canvas).then(function (shareCanvas) {
-                                        return _this2.streamToAmazonS3(shareCanvas.pngStream(), shareKey, true).then(function (_) {
+                                        return _this2.streamToAmazonS3(shareCanvas.pngStream(), shareKey, true).then(function (url) {
                                             console.info('done with s3 upload of share image!');
-                                            resolve(res);
+                                            return _shortlink2.default.shorten(url).then(function (short) {
+                                                console.info('shortened url ' + url + ' ---> ' + short);
+                                                _this2.addShareImage(url, short);
+                                                resolve(res);
+                                            }).catch(reject);
                                         }).catch(reject);
                                     }).catch(reject)
                                 };
@@ -564,6 +572,15 @@ var StravaMap = function () {
             } else {
                 _log2.default.info('no complete firebase location provided');
             }
+        }
+    }, {
+        key: 'addShareImage',
+        value: function addShareImage(url, short) {
+            var completedImageRef = _fb.rootRef.child(this.imageLocation);
+            completedImageRef.update({
+                sharableImage: url,
+                sharableShort: short
+            });
         }
     }, {
         key: 'fetchMapboxImages',
@@ -905,7 +922,7 @@ var generatePrint = function generatePrint(data) {
                 map.complete.then(function (url) {
                     var diff = hd.end();
                     console.info('vvv heap diff ---');
-                    console.info((0, _stringifyObject2.default)(diff));
+                    console.info((0, _stringifyObject2.default)(_lodash2.default.pick(diff, 'before', 'after')));
                     resolve(url);
                     map = null;
                 }).catch(function (err) {
