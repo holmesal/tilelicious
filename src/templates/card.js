@@ -12,6 +12,8 @@ export default dot.template(`
 
 	<meta property="og:url" content="http://api.victories.co/s/{{=it.shortlinkId}}">
 	<meta property="og:image" content="http://goo.gl/{{=it.shortlinkId}}">
+	<meta property="og:image:width" content="1080">
+	<meta property="og:image:height" content="1080">
 	<meta property="og:title" content="Victories">
 	<meta property="og:site_name" content="Victories">
 	<meta property="fb:app_id" content="1743873725835324">
