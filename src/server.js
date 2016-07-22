@@ -51,7 +51,7 @@ app.post('/printful-hooks', (req, res) => {
         })
 });
 
-app.get('/s/:shortlinkId', (req, res) => {
+app.get('/:shortlinkId', (req, res) => {
     const {shortlinkId} = req.params;
     if (!shortlinkId) {
         res.status(404).send();

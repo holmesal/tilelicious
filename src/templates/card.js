@@ -10,7 +10,7 @@ export default dot.template(`
 	<meta name="twitter:image" content="http://goo.gl/{{=it.shortlinkId}}">
 	<meta name="twitter:image:alt" content="A beautiful print.">
 
-	<meta property="og:url" content="http://api.victories.co/s/{{=it.shortlinkId}}">
+	<meta property="og:url" content="http://prints.victories.co/{{=it.shortlinkId}}">
 	<meta property="og:image" content="http://goo.gl/{{=it.shortlinkId}}">
 	<meta property="og:image:width" content="1080">
 	<meta property="og:image:height" content="1080">

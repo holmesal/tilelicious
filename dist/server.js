@@ -73,7 +73,7 @@ app.post('/printful-hooks', function (req, res) {
     });
 });
 
-app.get('/s/:shortlinkId', function (req, res) {
+app.get('/:shortlinkId', function (req, res) {
     var shortlinkId = req.params.shortlinkId;
 
     if (!shortlinkId) {
