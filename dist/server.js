@@ -22,6 +22,10 @@ var _url = require('url');
 
 var _url2 = _interopRequireDefault(_url);
 
+var _card = require('./templates/card');
+
+var _card2 = _interopRequireDefault(_card);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var app = (0, _express2.default)();
@@ -67,6 +71,15 @@ app.post('/printful-hooks', function (req, res) {
         _log2.default.error('error handing webhook', err);
         res.status(500).send('oh shit.');
     });
+});
+
+app.get('/s/:shortlinkId', function (req, res) {
+    var shortlinkId = req.params.shortlinkId;
+
+    if (!shortlinkId) {
+        res.status(404).send();
+    }
+    res.send((0, _card2.default)({ shortlinkId: shortlinkId }));
 });
 
 var port = process.env.PORT || 5000;

@@ -411,7 +411,7 @@ class StravaMap {
     streamToAmazonS3(stream, key, isShare=false) {
         return new Promise((resolve, reject) => {
             log.info('streaming to amazon s3: ', key);
-            let keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'paperSize', 'imageLocation', 'text', 'taskId'];
+            let keys = ['textColor', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'paperSize', 'imageLocation', 'text', 'taskId'];
             let metadata = {};
             keys.forEach(key => metadata[key] = JSON.stringify(this[key]));
             log.info('s3 metadata: ', metadata);

@@ -533,7 +533,7 @@ var StravaMap = function () {
 
             return new Promise(function (resolve, reject) {
                 _log2.default.info('streaming to amazon s3: ', key);
-                var keys = ['textColor', 'mapCreds', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'paperSize', 'imageLocation', 'text', 'taskId'];
+                var keys = ['textColor', 'zScreen', 'vectorStyle', 'vectorScaleScale', 'uid', 'backgroundColor', 'paperSize', 'imageLocation', 'text', 'taskId'];
                 var metadata = {};
                 keys.forEach(function (key) {
                     return metadata[key] = JSON.stringify(_this3[key]);

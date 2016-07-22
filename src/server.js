@@ -5,6 +5,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import url from 'url';
 import {handleWebhook} from './utils/printful';
+import card from './templates/card';
 
 let app = express();
 
@@ -48,6 +49,14 @@ app.post('/printful-hooks', (req, res) => {
             log.error('error handing webhook', err);
             res.status(500).send('oh shit.');
         })
+});
+
+app.get('/s/:shortlinkId', (req, res) => {
+    const {shortlinkId} = req.params;
+    if (!shortlinkId) {
+        res.status(404).send();
+    }
+    res.send(card({shortlinkId}));
 });
 
 
