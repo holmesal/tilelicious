@@ -18,9 +18,69 @@ export default dot.template(`
 	<meta property="og:site_name" content="Victories">
 	<meta property="fb:app_id" content="1743873725835324">
 	<meta property="og:description" content="Beautiful prints from your Strava data.">
+
+	<style>
+
+	*, *:before, *:after
+{
+	-moz-box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+@import url(https://fonts.googleapis.com/css?family=Poppins:600);
+
+
+body,html {
+  margin: 0;
+  background-color: #F2F2F2;
+  font-family: 'Poppins', sans-serif;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+  padding-top: 44px;
+  padding-bottom: 44px;
+}
+
+.image {
+  align-self: stretch;
+  flex: 1;
+  max-height: 800px;
+  min-height: 400px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
+}
+
+.image {
+  height: 100%;
+  margin-bottom: 44px;
+}
+
+.button {
+  height: 75px;
+  width: 244px;
+  border-radius: 4px;
+  background-color: #00CD87;
+  text-decoration: none;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+}
+	</style>
   </head>
   <body>
-    <img src="http://goo.gl/{{=it.shortlinkId}}" />
+  	<div class="wrapper">
+  		<div class="image" style="background-image: url('http://goo.gl/{{=it.shortlinkId}}')"></div>
+    	<a class="button" href="http://victories.co">MAKE YOUR OWN</a>
+    </div>
   </body>
 </html>
 `);
