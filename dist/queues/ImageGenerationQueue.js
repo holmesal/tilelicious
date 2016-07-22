@@ -577,9 +577,13 @@ var StravaMap = function () {
         key: 'addShareImage',
         value: function addShareImage(url, short) {
             var completedImageRef = _fb.rootRef.child(this.imageLocation);
+            var shortId = short.split('goo.gl/')[1];
+            var shareLink = 'http://prints.victories.co/' + shortId;
             completedImageRef.update({
                 sharableImage: url,
-                sharableShort: short
+                sharableImageShort: short,
+                shortId: shortId,
+                shareLink: shareLink
             });
         }
     }, {

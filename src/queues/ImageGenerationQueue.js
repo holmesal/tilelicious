@@ -451,9 +451,13 @@ class StravaMap {
 
     addShareImage(url, short) {
         const completedImageRef = rootRef.child(this.imageLocation);
+        const shortId = short.split('goo.gl/')[1];
+        const shareLink = `http://prints.victories.co/${shortId}`
         completedImageRef.update({
             sharableImage: url,
-            sharableShort: short
+            sharableImageShort: short,
+            shortId,
+            shareLink,
         });
     }
 
