@@ -38,17 +38,27 @@ body,html {
 }
 
 .wrapper {
+  display: -webkit-box;
+  display: -ms-flexbox;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
   min-height: 100%;
   padding-top: 44px;
   padding-bottom: 44px;
 }
 
 .image {
-  align-self: stretch;
-  flex: 1;
+  -ms-flex-item-align: stretch;
+      align-self: stretch;
+  -webkit-box-flex: 1;
+      -ms-flex: 1;
+          flex: 1;
   max-height: 800px;
   min-height: 400px;
   background-repeat: no-repeat;
@@ -68,9 +78,15 @@ body,html {
   background-color: #00CD87;
   text-decoration: none;
   color: #FFFFFF;
+  display: -webkit-box;
+  display: -ms-flexbox;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
   font-size: 11px;
   letter-spacing: 1.5px;
 }
