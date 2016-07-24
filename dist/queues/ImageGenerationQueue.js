@@ -912,6 +912,8 @@ var generatePrint = function generatePrint(data) {
     return new Promise(function (resolve, reject) {
         _log2.default.info('generating print...');
         _log2.default.info(data);
+        // Allow empty activities array
+        if (!data.activities) data.activities = [];
         if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
             _log2.default.error('parameter missing', data);
             reject({

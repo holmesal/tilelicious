@@ -765,6 +765,8 @@ const generatePrint = (data) => {
     return new Promise((resolve, reject) => {
         log.info('generating print...');
         log.info(data);
+        // Allow empty activities array
+        if (!data.activities) data.activities = [];
         if (!data.pixelsScreen || !data.paperSize || !data.zScreen || !data.bboxScreen || !data.theme || !data.activities || !data.uid || !data.imageLocation) {
             log.error('parameter missing', data);
             reject({
