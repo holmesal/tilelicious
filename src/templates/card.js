@@ -19,6 +19,8 @@ export default dot.template(`
 	<meta property="fb:app_id" content="1743873725835324">
 	<meta property="og:description" content="Beautiful prints from your Strava data.">
 
+  <link rel="shortcut icon" type="image/png" href="http://victories.co/images/favicon.png">
+
 	<style>
 
 	*, *:before, *:after
