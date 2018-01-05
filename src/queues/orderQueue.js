@@ -34,7 +34,8 @@ let chargeCardQueue = new Queue(orderQueueRef, {specId: specs.chargeCard}, (data
         amount: data.order.costs.total,
         currency: 'usd',
         source: data.stripe.id,
-        description: 'Charge for Victories print'
+        description: 'Charge for Victories print',
+        receipt_email: data.stripe.email
     }, (err, charge) => {
         if (err) {
             log.error(err);
