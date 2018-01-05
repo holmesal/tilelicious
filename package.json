@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "render tiles to static images",
   "main": "index.js",
+  "engines": {
+    "node": "6.12.3"
+  },
   "scripts": {
     "build": "babel src --out-dir dist",
     "watch": "babel src --watch --out-dir dist",
