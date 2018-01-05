@@ -4,7 +4,7 @@
   "description": "render tiles to static images",
   "main": "index.js",
   "engines": {
-    "node": "6.12.3"
+    "node": "5.11.1"
   },
   "scripts": {
     "build": "babel src --out-dir dist",
