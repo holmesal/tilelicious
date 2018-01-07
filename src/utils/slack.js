@@ -18,6 +18,8 @@ export default function say(message, sendToMainChannel=false) {
     .end((err, res) => {
         if (err) {
             log.error('error posting message in slack', err);
+            log.info('message text: ', message);
+            log.info('stringified body: ', JSON.stringify(json));
         } else {
             log.info('slack responded: ', res.body);
         }
