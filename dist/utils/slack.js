@@ -9,24 +9,33 @@ var _superagent = require('superagent');
 
 var _superagent2 = _interopRequireDefault(_superagent);
 
+var _log = require('../log');
+
+var _log2 = _interopRequireDefault(_log);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var webhookUrl = process.env.SLACK_WEBHOOK_URL;
 // import {RtmClient, CLIENT_EVENTS, MemoryDataStore} from '@slack/client';
+var webhookUrl = process.env.SLACK_WEBHOOK_URL;
+
 function say(message) {
   var sendToMainChannel = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-  var json = {
-    text: message
-  };
+  try {
+    var json = {
+      text: message
+    };
 
-  if (sendToMainChannel) json.channel = '#victories';
+    if (sendToMainChannel) json.channel = '#victories';
 
-  _superagent2.default.post(webhookUrl).send(json).then(function (res) {
-    log.verbose(pre + 'slack responded: ', res);
-  }).catch(function (err) {
-    log.error('error posting message in slack', err);
-  });
+    _superagent2.default.post(webhookUrl).send(json).then(function (res) {
+      _log2.default.info('slack responded: ', res);
+    }).catch(function (err) {
+      _log2.default.error('error posting message in slack', err);
+    });
+  } catch (e) {
+    _log2.default.error('error posting message in slack', err);
+  }
 }
 
 var message = ':sun_with_face: new *' + (process.env.NODE_ENV === 'production' ? 'Production' : 'Development') + '* Victories server started!';

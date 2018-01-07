@@ -1,24 +1,29 @@
 
 // import {RtmClient, CLIENT_EVENTS, MemoryDataStore} from '@slack/client';
 import request from 'superagent';
+import log from '../log';
 
 const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
 export default function say(message, sendToMainChannel=false) {
-  const json = {
-      text: message
-  };
+  try {
+    let json = {
+        text: message
+    };
 
-  if (sendToMainChannel) json.channel = '#victories';
+    if (sendToMainChannel) json.channel = '#victories';
 
-  request.post(webhookUrl)
-  .send(json)
-  .then(function(res) {
-    log.verbose(pre+'slack responded: ', res);
-  })
-  .catch(function(err) {
+    request.post(webhookUrl)
+    .send(json)
+    .then(function(res) {
+      log.info('slack responded: ', res);
+    })
+    .catch(function(err) {
+      log.error('error posting message in slack', err);
+    });
+  } catch(e) {
     log.error('error posting message in slack', err);
-  });
+  }
 }
 
 let message = `:sun_with_face: new *${process.env.NODE_ENV === 'production' ? 'Production' : 'Development'}* Victories server started!`;
