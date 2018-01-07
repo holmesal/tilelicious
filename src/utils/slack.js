@@ -15,13 +15,14 @@ export default function say(message, sendToMainChannel=false) {
 
     request.post(webhookUrl)
     .send(json)
-    .then(function(res) {
-      log.info('slack responded: ', res);
-    })
-    .catch(function(err) {
-      log.error('error posting message in slack', err);
+    .end((err, res) => {
+        if (err) {
+            log.error('error posting message in slack', err);
+        } else {
+            log.info('slack responded: ', res);
+        }
     });
-  } catch(e) {
+  } catch(err) {
     log.error('error posting message in slack', err);
   }
 }

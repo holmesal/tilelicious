@@ -1,7 +1,7 @@
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+    value: true
 });
 exports.default = say;
 
@@ -19,23 +19,25 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
 function say(message) {
-  var sendToMainChannel = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+    var sendToMainChannel = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-  try {
-    var json = {
-      text: message
-    };
+    try {
+        var json = {
+            text: message
+        };
 
-    if (sendToMainChannel) json.channel = '#victories';
+        if (sendToMainChannel) json.channel = '#victories';
 
-    _superagent2.default.post(webhookUrl).send(json).then(function (res) {
-      _log2.default.info('slack responded: ', res);
-    }).catch(function (err) {
-      _log2.default.error('error posting message in slack', err);
-    });
-  } catch (e) {
-    _log2.default.error('error posting message in slack', err);
-  }
+        _superagent2.default.post(webhookUrl).send(json).end(function (err, res) {
+            if (err) {
+                _log2.default.error('error posting message in slack', err);
+            } else {
+                _log2.default.info('slack responded: ', res);
+            }
+        });
+    } catch (err) {
+        _log2.default.error('error posting message in slack', err);
+    }
 }
 
 var message = ':sun_with_face: new *' + (process.env.NODE_ENV === 'production' ? 'Production' : 'Development') + '* Victories server started!';
