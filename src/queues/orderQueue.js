@@ -132,9 +132,9 @@ let createOrderQueue = new Queue(orderQueueRef, {specId: specs.createOrder}, (da
             say(`
             :printer::moneybag: new order for *${createdOrder.recipient.name}* in *${createdOrder.recipient.city}, ${createdOrder.recipient.country_name}* submitted to printful!\n
                 cost: ${createdOrder.costs.total}    retail: ${createdOrder.retail_costs.total}    *profit: ${parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)}*\n
-                :mag: Go here to check the print image for issues: ${data.generatedImage}\n
-                :flag-ng: Then, go here to make sure the card charge succeeded ${chargeUrl}
-                :truck: Finally, go here to ship order \`${data.stripe.id}\`: https://www.theprintful.com/dashboard/default
+                :mag: Go here to check the print image for issues: <${data.generatedImage}>\n
+                :flag-ng: Then, go here to make sure the card charge succeeded <${chargeUrl}>
+                :truck: Finally, go here to ship order \`${data.stripe.id}\`: <https://www.theprintful.com/dashboard/default>
             `, true);
             resolve(data);
         })

@@ -18,10 +18,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function dumpError(err) {
     // Log via winston
     _log2.default.error(err);
-    var stage = err.stage;
-    var error = err.error;
-    var meta = err.meta;
-    var data = err.data;
+    var stage = err.stage,
+        error = err.error,
+        meta = err.meta,
+        data = err.data;
 
     if (typeof error === 'error') error = error.message;
     if (error && typeof error != 'string') error = JSON.stringify(error);

@@ -69,7 +69,7 @@ var ActivityNomNom = function () {
         value: function fetchActivities() {
             var _this2 = this;
 
-            var page = arguments.length <= 0 || arguments[0] === undefined ? 1 : arguments[0];
+            var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
 
             _log2.default.info('fetching activities page ' + page + ' for athlete ' + this.uid);
             var activityCount = 0;

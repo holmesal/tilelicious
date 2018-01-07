@@ -1,10 +1,10 @@
 'use strict';
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _winston = require('winston');
 
@@ -26,11 +26,11 @@ var SlackLogger = function (_winston$Transport) {
     _inherits(SlackLogger, _winston$Transport);
 
     function SlackLogger() {
-        var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
         _classCallCheck(this, SlackLogger);
 
-        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(SlackLogger).call(this, options));
+        var _this = _possibleConstructorReturn(this, (SlackLogger.__proto__ || Object.getPrototypeOf(SlackLogger)).call(this, options));
 
         _this.name = 'SlackLogger';
         _this.level = options.level || 'error';
@@ -53,7 +53,6 @@ var logger = new _winston2.default.Logger({
     transports: [new _winston2.default.transports.Console(), new _winston2.default.transports.Logentries({ token: '17ed1c11-f58e-4a6e-8bed-c71d3c6de45b' })]
 });
 
-//new SlackLogger()
 logger.on('error', function (error) {
     console.info('winston logged error!');
 });

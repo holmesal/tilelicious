@@ -1,13 +1,12 @@
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 //import latLngToTileXY from './tileUtils';
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
 
 var _canvas = require('canvas');
 
@@ -198,7 +197,7 @@ var StravaMap = function () {
         var widthScaleFactor = this.pixelsPrint.mapWidth / pixelsScreen.w;
 
         // How many zoom levels do we have to go up to cover this screen
-        var zSteps = undefined;
+        var zSteps = void 0;
         for (zSteps = 0; zSteps < 28; zSteps++) {
             if (Math.pow(2, zSteps) >= widthScaleFactor) {
                 break;
@@ -212,7 +211,7 @@ var StravaMap = function () {
         var residualScale = Math.pow(2, zSteps) - widthScaleFactor;
 
         // What's the "width" of this zoom interval?
-        var intervalWidth = undefined;
+        var intervalWidth = void 0;
         if (zSteps > 0) {
             intervalWidth = Math.pow(2, zSteps) - Math.pow(2, zSteps - 1);
         } else {
@@ -386,23 +385,17 @@ var StravaMap = function () {
                     _this2.streamToAmazonS3(stream, path).then(function (res) {
                         // If this is a preview, we also need to generate and upload a "shareable" image
                         if (_this2.paperSize === 'preview') {
-                            var _ret = function () {
-                                var shareKey = key + '-share.png';
-                                return {
-                                    v: _this2.generateShareImage(_this2.canvas).then(function (shareCanvas) {
-                                        return _this2.streamToAmazonS3(shareCanvas.pngStream(), shareKey, true).then(function (url) {
-                                            console.info('done with s3 upload of share image!');
-                                            return _shortlink2.default.shorten(url).then(function (short) {
-                                                console.info('shortened url ' + url + ' ---> ' + short);
-                                                _this2.addShareImage(url, short);
-                                                resolve(res);
-                                            }).catch(reject);
-                                        }).catch(reject);
-                                    }).catch(reject)
-                                };
-                            }();
-
-                            if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+                            var shareKey = key + '-share.png';
+                            return _this2.generateShareImage(_this2.canvas).then(function (shareCanvas) {
+                                return _this2.streamToAmazonS3(shareCanvas.pngStream(), shareKey, true).then(function (url) {
+                                    console.info('done with s3 upload of share image!');
+                                    return _shortlink2.default.shorten(url).then(function (short) {
+                                        console.info('shortened url ' + url + ' ---> ' + short);
+                                        _this2.addShareImage(url, short);
+                                        resolve(res);
+                                    }).catch(reject);
+                                }).catch(reject);
+                            }).catch(reject);
                         } else {
                             // If this isn't a preview image, just resolve immediately
                             resolve(res);
@@ -468,16 +461,16 @@ var StravaMap = function () {
         value: function drawTextToCanvas() {
             // Insert spaces between each character
             var text = this.text.split('').join(' ');
-            var _pixelsPrint = this.pixelsPrint;
-            var printHeight = _pixelsPrint.printHeight;
-            var printWidth = _pixelsPrint.printWidth;
-            var paddingTop = _pixelsPrint.paddingTop;
-            var mapHeight = _pixelsPrint.mapHeight;
-            var mapWidth = _pixelsPrint.mapWidth;
-            var fontSize = _pixelsPrint.fontSize;
-            var copyrightFontSize = _pixelsPrint.copyrightFontSize;
-            var letterSpacing = _pixelsPrint.letterSpacing;
-            var textMarginTop = _pixelsPrint.textMarginTop;
+            var _pixelsPrint = this.pixelsPrint,
+                printHeight = _pixelsPrint.printHeight,
+                printWidth = _pixelsPrint.printWidth,
+                paddingTop = _pixelsPrint.paddingTop,
+                mapHeight = _pixelsPrint.mapHeight,
+                mapWidth = _pixelsPrint.mapWidth,
+                fontSize = _pixelsPrint.fontSize,
+                copyrightFontSize = _pixelsPrint.copyrightFontSize,
+                letterSpacing = _pixelsPrint.letterSpacing,
+                textMarginTop = _pixelsPrint.textMarginTop;
             // Figure out the top left of the rectangle
 
             var bottomAreaHeight = printHeight - mapHeight - paddingTop;
@@ -529,7 +522,7 @@ var StravaMap = function () {
         value: function streamToAmazonS3(stream, key) {
             var _this3 = this;
 
-            var isShare = arguments.length <= 2 || arguments[2] === undefined ? false : arguments[2];
+            var isShare = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
             return new Promise(function (resolve, reject) {
                 _log2.default.info('streaming to amazon s3: ', key);
@@ -874,6 +867,7 @@ var StravaMap = function () {
 
 // light
 
+
 var themes = {
     dark: {
         mapCreds: {
@@ -922,22 +916,20 @@ var generatePrint = function generatePrint(data) {
                 data: data
             });
         } else {
-            (function () {
-                var hd = new _memwatchNext2.default.HeapDiff();
-                var map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text, data._id);
-                map.complete.then(function (url) {
-                    var diff = hd.end();
-                    console.info('vvv heap diff ---');
-                    console.info((0, _stringifyObject2.default)(_lodash2.default.pick(diff, 'before', 'after')));
-                    resolve(url);
-                    map = null;
-                }).catch(function (err) {
-                    _log2.default.info('image generation request failed...', err);
-                    //dumpError(err);
-                    reject(err);
-                    map = null;
-                });
-            })();
+            var hd = new _memwatchNext2.default.HeapDiff();
+            var map = new StravaMap(data.pixelsScreen, data.zScreen, data.bboxScreen, data.paperSize, themes[data.theme], vectorScaleScale, data.uid, data.activities, data.imageLocation, data.text, data._id);
+            map.complete.then(function (url) {
+                var diff = hd.end();
+                console.info('vvv heap diff ---');
+                console.info((0, _stringifyObject2.default)(_lodash2.default.pick(diff, 'before', 'after')));
+                resolve(url);
+                map = null;
+            }).catch(function (err) {
+                _log2.default.info('image generation request failed...', err);
+                //dumpError(err);
+                reject(err);
+                map = null;
+            });
         }
     });
 };

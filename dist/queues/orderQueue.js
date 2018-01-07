@@ -55,7 +55,8 @@ var chargeCardQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: s
         amount: data.order.costs.total,
         currency: 'usd',
         source: data.stripe.id,
-        description: 'Charge for Victories print'
+        description: 'Charge for Victories print',
+        receipt_email: data.stripe.email
     }, function (err, charge) {
         if (err) {
             _log2.default.error(err);
@@ -106,14 +107,14 @@ var storeCompletedOrderQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { 
 
 // Create a printful order
 var createOrderQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: specs.createOrder }, function (data, progress, resolve, reject) {
-    var _data$order$address = data.order.address;
-    var addressLine1 = _data$order$address.addressLine1;
-    var addressLine2 = _data$order$address.addressLine2;
-    var city = _data$order$address.city;
-    var country = _data$order$address.country;
-    var fullName = _data$order$address.fullName;
-    var state = _data$order$address.state;
-    var zip = _data$order$address.zip;
+    var _data$order$address = data.order.address,
+        addressLine1 = _data$order$address.addressLine1,
+        addressLine2 = _data$order$address.addressLine2,
+        city = _data$order$address.city,
+        country = _data$order$address.country,
+        fullName = _data$order$address.fullName,
+        state = _data$order$address.state,
+        zip = _data$order$address.zip;
 
     // Get the item
 
@@ -152,7 +153,7 @@ var createOrderQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: 
         orderRef.update(data);
         // Post to slack
         var chargeUrl = 'https://dashboard.stripe.com/' + (data.charge.livemode ? '' : 'test/') + 'payments/' + data.charge.id;
-        (0, _slack2.default)('\n            :printer::moneybag: new order for *' + createdOrder.recipient.name + '* in *' + createdOrder.recipient.city + ', ' + createdOrder.recipient.country_name + '* submitted to printful!\n\n                cost: ' + createdOrder.costs.total + '    retail: ' + createdOrder.retail_costs.total + '    *profit: ' + (parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)) + '*\n\n                :mag: Go here to check the print image for issues: ' + data.generatedImage + '\n\n                :flag-ng: Then, go here to make sure the card charge succeeded ' + chargeUrl + '\n                :truck: Finally, go here to ship order `' + data.stripe.id + '`: https://www.theprintful.com/dashboard/default\n            ', true);
+        (0, _slack2.default)('\n            :printer::moneybag: new order for *' + createdOrder.recipient.name + '* in *' + createdOrder.recipient.city + ', ' + createdOrder.recipient.country_name + '* submitted to printful!\n\n                cost: ' + createdOrder.costs.total + '    retail: ' + createdOrder.retail_costs.total + '    *profit: ' + (parseFloat(createdOrder.retail_costs.total) - parseFloat(createdOrder.costs.total)) + '*\n\n                :mag: Go here to check the print image for issues: <' + data.generatedImage + '>\n\n                :flag-ng: Then, go here to make sure the card charge succeeded <' + chargeUrl + '>\n                :truck: Finally, go here to ship order `' + data.stripe.id + '`: <https://www.theprintful.com/dashboard/default>\n            ', true);
         resolve(data);
     }).catch(reject);
 });

@@ -11,9 +11,8 @@ export default function say(message, sendToMainChannel=false) {
 
   if (sendToMainChannel) json.channel = '#victories';
 
-  request.post(webhookUrl, {
-    json: json
-  })
+  request.post(webhookUrl)
+  .send(json)
   .then(function(res) {
     log.verbose(pre+'slack responded: ', res);
   })

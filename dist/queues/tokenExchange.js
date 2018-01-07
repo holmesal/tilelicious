@@ -29,8 +29,8 @@ var queue = new _firebaseQueue2.default(_fb.tokenExchangeQueueRef, function (dat
             _log2.default.error(err, res);
         } else {
             _log2.default.info('got athlete', res);
-            var access_token = res.access_token;
-            var athlete = res.athlete;
+            var access_token = res.access_token,
+                athlete = res.athlete;
 
             var uid = athlete.id;
             // store access token on the user
