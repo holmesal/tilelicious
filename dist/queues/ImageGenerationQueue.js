@@ -540,7 +540,7 @@ var StravaMap = function () {
                     if (isShare) {
                         (0, _slack2.default)(url);
                     } else {
-                        (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* _"' + _this3.text + '"_ generated in *' + elapsed + 's*!');
+                        (0, _slack2.default)(':frame_with_picture: new *' + _this3.paperSize + '* _"' + _this3.text + '"_ generated in *' + elapsed + 's*!     <' + url + '|view image>');
                         _this3.pointFirebaseToS3(url, elapsed);
                     }
                     resolve(url);

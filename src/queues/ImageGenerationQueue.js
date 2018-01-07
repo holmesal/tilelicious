@@ -423,7 +423,7 @@ class StravaMap {
                 if (isShare) {
                     slack(url); 
                 } else {
-                    slack(`:frame_with_picture: new *${this.paperSize}* _"${this.text}"_ generated in *${elapsed}s*!`); 
+                    slack(`:frame_with_picture: new *${this.paperSize}* _"${this.text}"_ generated in *${elapsed}s*!     <${url}|view image>`); 
                     this.pointFirebaseToS3(url, elapsed);
                 }
                 resolve(url);

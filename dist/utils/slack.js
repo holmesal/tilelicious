@@ -32,7 +32,7 @@ function say(message) {
             if (err) {
                 _log2.default.error('error posting message in slack', err);
             } else {
-                _log2.default.info('slack responded: ', res);
+                _log2.default.info('slack responded: ', res.body);
             }
         });
     } catch (err) {

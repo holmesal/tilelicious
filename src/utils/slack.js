@@ -19,7 +19,7 @@ export default function say(message, sendToMainChannel=false) {
         if (err) {
             log.error('error posting message in slack', err);
         } else {
-            log.info('slack responded: ', res);
+            log.info('slack responded: ', res.body);
         }
     });
   } catch(err) {
