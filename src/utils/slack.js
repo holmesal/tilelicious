@@ -21,6 +21,8 @@ export default function say(message, sendToMainChannel=false) {
             log.info('message text: ', message);
             log.info('stringified body: ', JSON.stringify(json));
         } else {
+            log.info('message text: ', message);
+            log.info('stringified body: ', JSON.stringify(json));
             log.info('slack responded: ', res.body);
         }
     });

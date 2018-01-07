@@ -34,6 +34,8 @@ function say(message) {
                 _log2.default.info('message text: ', message);
                 _log2.default.info('stringified body: ', JSON.stringify(json));
             } else {
+                _log2.default.info('message text: ', message);
+                _log2.default.info('stringified body: ', JSON.stringify(json));
                 _log2.default.info('slack responded: ', res.body);
             }
         });
