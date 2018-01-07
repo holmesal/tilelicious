@@ -31,12 +31,13 @@ function say(message) {
         _superagent2.default.post(webhookUrl).send(json).end(function (err, res) {
             if (err) {
                 _log2.default.error('error posting message in slack', err);
+                _log2.default.info('response text: ', res.text);
                 _log2.default.info('message text: ', message);
                 _log2.default.info('stringified body: ', JSON.stringify(json));
             } else {
                 _log2.default.info('message text: ', message);
                 _log2.default.info('stringified body: ', JSON.stringify(json));
-                _log2.default.info('slack responded: ', res.body);
+                _log2.default.info('slack responded: ', res.text);
             }
         });
     } catch (err) {
