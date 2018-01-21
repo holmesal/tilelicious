@@ -73,13 +73,21 @@ body,html {
   margin-bottom: 44px;
 }
 
+.buttons {
+  display: flex;
+  flex-direction: row;
+}
+
 .button {
   height: 75px;
   width: 244px;
   border-radius: 4px;
-  background-color: #00CD87;
+  border-color: #9e9e9e;
+  border-style: solid;
+  border-width: 1px;
+  background-color: transparent;
+  color: #202020;
   text-decoration: none;
-  color: #FFFFFF;
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
@@ -91,13 +99,24 @@ body,html {
           justify-content: center;
   font-size: 11px;
   letter-spacing: 1.5px;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.green {
+  border-style: none;
+  background-color: #00CD87;
+  color: #FFFFFF;
 }
 	</style>
   </head>
   <body>
   	<div class="wrapper">
-  		<div class="image" style="background-image: url('http://goo.gl/{{=it.shortlinkId}}')"></div>
-    	<a class="button" href="http://victories.co">MAKE YOUR OWN</a>
+      <div class="image" style="background-image: url('http://goo.gl/{{=it.shortlinkId}}')"></div>
+      <div class="buttons">
+          <a class="button" href="http://goo.gl/{{=it.shortlinkId}}" download>DOWNLOAD</a>
+          <a class="button green" href="http://victories.co">MAKE YOUR OWN</a>
+      </div>
     </div>
   </body>
 </html>
