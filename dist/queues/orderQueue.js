@@ -39,8 +39,6 @@ var specs = {
 var STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY;
 var STRIPE_TEST_KEY = process.env.STRIPE_TEST_KEY;
 
-var stripe = (0, _stripe2.default)(STRIPE_TEST_KEY);
-
 _log2.default.info('order queue up and running!');
 
 var chargeCardQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: specs.chargeCard }, function (data, progress, resolve, reject) {
@@ -49,6 +47,16 @@ var chargeCardQueue = new _firebaseQueue2.default(_fb.orderQueueRef, { specId: s
     // First off, store this order somewhere permanent
     var orderRef = _fb.ordersRef.child(data.stripe.id);
     orderRef.set(data);
+
+    // Live or test?
+    var stripe = void 0;
+    if (data.stripe.livemode) {
+        console.info('using LIVE stripe key!');
+        stripe = (0, _stripe2.default)(STRIPE_LIVE_KEY);
+    } else {
+        console.info('using TEST stripe key!');
+        stripe = (0, _stripe2.default)(STRIPE_TEST_KEY);
+    }
 
     // Attempt to charge this user's card via stripe
     stripe.charges.create({
