@@ -18,8 +18,6 @@ let specs = {
 let STRIPE_LIVE_KEY = process.env.STRIPE_LIVE_KEY;
 let STRIPE_TEST_KEY = process.env.STRIPE_TEST_KEY;
 
-let stripe = Stripe(STRIPE_TEST_KEY);
-
 log.info('order queue up and running!');
 
 let chargeCardQueue = new Queue(orderQueueRef, {specId: specs.chargeCard}, (data, progress, resolve, reject) => {
@@ -28,6 +26,10 @@ let chargeCardQueue = new Queue(orderQueueRef, {specId: specs.chargeCard}, (data
     // First off, store this order somewhere permanent
     let orderRef = ordersRef.child(data.stripe.id);
     orderRef.set(data);
+
+    // Live or test?
+    const key = data.stripe.livemode ? STRIPE_LIVE_KEY : STRIPE_TEST_KEY;
+    const stripe = Stripe(key);
 
     // Attempt to charge this user's card via stripe
     stripe.charges.create({
