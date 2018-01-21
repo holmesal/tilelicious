@@ -28,8 +28,16 @@ let chargeCardQueue = new Queue(orderQueueRef, {specId: specs.chargeCard}, (data
     orderRef.set(data);
 
     // Live or test?
-    const key = data.stripe.livemode ? STRIPE_LIVE_KEY : STRIPE_TEST_KEY;
-    const stripe = Stripe(key);
+    let stripe;
+    if (data.stripe.livemode)
+    {
+        console.info('using LIVE stripe key!');
+        stripe = Stripe(STRIPE_LIVE_KEY);
+    } else
+    {
+        console.info('using TEST stripe key!');
+        stripe = Stripe(STRIPE_TEST_KEY);
+    }
 
     // Attempt to charge this user's card via stripe
     stripe.charges.create({
